@@ -42,6 +42,7 @@ type _InMsg struct {
 //解析的quest数据的结构类型
 type _InQuest struct {
 	txid int64
+	repeatFlag bool
 	service string
 	method string
 	ctx map[string]interface {}

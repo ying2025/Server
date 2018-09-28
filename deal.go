@@ -19,14 +19,13 @@ const (
 )
 
 var (
-	send_nonce int64 = 0
+	send_nonce int64 = 1
 	key []byte
 	nonceHex string = "22E7ADD93CFC6393C57EC0B3C17D6B44"
 	headerHex string = "126735FCC320D25A"
 	receiveList =  make(map[int]int64)
 	receiveDataList = make(map[int64][]byte)  // temp receive data
 )
-
 
 func buildHeader(header []byte) messageHeader{
 	var head messageHeader
@@ -37,8 +36,6 @@ func buildHeader(header []byte) messageHeader{
 	head.BodySize = int32(header[4])*256*256*256 + int32(header[5])*256*256 + int32(header[6])*256 +int32(header[7])
 	return head
 }
-
-
 // check header whether is qualified
 func checkHeader(header messageHeader) error {
 	if header.Magic != 'X' || header.Version != '!' {
@@ -61,8 +58,6 @@ func checkHeader(header messageHeader) error {
 	}
 	return  nil
 }
-
-
 // pack the header
 func fillHeader(size int,t MsgType) []byte{
 	var packet []byte
@@ -95,13 +90,19 @@ func (q *_InQuest) Type() MsgType {
 // resolve the request data from client that type is Q
 // Return ANSWER type message
 func dealRequest(reply string) []byte{
-	_,answer := resolveRequest(reply) //resovle request
-	txid := answer.txid
+	_isEnc := reply[3]  // encrypt flag
+	request, errAnswer := resolveRequest(_isEnc, reply) //resovle request
+
+	txid := request.txid
 	if txid == 0 {  // txid is 0, server is no response
 		return nil
 	}
-	_isEnc := reply[3]  // encrypt flag
-	receiveList[len(receiveList)] = txid    // Receive List
+	if request.repeatFlag {   // repeat data, direct pack
+		return packAnswer(_isEnc, txid, errAnswer)
+	}
+
+	var answer answer
+	answer = packAnswerBody(txid)
 	return packAnswer(_isEnc, txid, answer)
 }
 
@@ -123,7 +124,7 @@ func packAnswer(_isEnc uint8,txid int64, answer answer) []byte{
 		copy(result[:8],packet)
 		copy(result[8:],content.buf)
 	}
-	deleteTxid(txid)
+	//deleteTxid(txid)
 	return result
 }
 // delete Txid from receive List
@@ -135,6 +136,82 @@ func deleteTxid(txid int64) {
 		}
 		key++
 	}
+}
+
+// resolve Q type message from client
+func resolveRequest(isEnc uint8, reply string) (_InQuest, answer){
+	len1 := int(reply[4])*256*256*256 + int(reply[5])*256*256 + int(reply[6])*256 +int(reply[7])
+	var data []byte
+	if isEnc == 0x01 {
+		data = []byte(reply[8:len1+24]) // meassage + MAC
+		data = decrypt(data)
+		if len(data) != len1 {
+			log.Fatalln("Data length not equal to bodysize")
+		}
+	} else {
+		data = []byte(reply[8:len1+8])
+		if len(data) != len(reply)-8 {
+			log.Fatalln("Data length not equal to bodysize")
+		}
+	}
+
+	var request _InQuest
+	var errAnswer answer
+	content := decodeData(5,data)//5代表5数组长度，解析VBS字符串的数据成数组，
+	//request param
+	request.txid = content[0].(int64)
+	request.service = content[1].(string)
+	request.method = content[2].(string)
+	request.ctx = content[3].(map[string]interface {})
+	request.args = content[4].(map[string]interface {})
+	txid := request.txid
+
+	// judge whether is already receive the data
+	for _, value := range receiveDataList {
+		if bytes.Equal(data[1:], value){  // Remove txid
+			errAnswer.status = 1
+			msg := "message is duplication"
+			arg := packExpArg("Receive duplication of data",1000,"218",msg,"resolveRequest*service","Receive")
+			errAnswer.args =  arg
+			request.repeatFlag = true
+			return request, errAnswer
+		}
+	}
+	if txid != 0 {
+		receiveList[len(receiveList)] =  txid   // Receive List
+	}
+	// record receive data
+	receiveDataList[txid] = data[1:]  // Remove txid
+	return request, errAnswer
+}
+
+func packAnswerBody(txid int64) answer {
+	var answer answer
+	var err error
+	arg  := make(map[string]interface{})
+	// construct the data return to client
+	answer.txid = txid
+	if err != nil {  // exception
+		answer.status = 1
+		arg = packExpArg("",1001,"","","","")
+	} else {  // normal
+		answer.status = 0
+		arg["first"] = "this is server reply"
+		arg["second"] = "this is Tim server"
+	}
+	answer.args =  arg
+	return answer
+}
+// pack expection param
+func packExpArg(name string, code int, tag string, msg string, raiser string, detail string) map[string]interface{}{
+	arg  := make(map[string]interface{})
+	arg["exname"] = name
+	arg["code"] = code
+	arg["tag"] = tag
+	arg["message"] = msg
+	arg["raiser"] = raiser
+	arg["detail"] = detail
+	return arg
 }
 // decode VBS data, return a array
 func decodeData(n int,data []byte) []interface{}{
@@ -181,82 +258,6 @@ func decrypt(cipherMsg []byte) ([]byte){
 	return out[:n]
 }
 
-// resolve Q type message from client
-func resolveRequest(reply string) (_InQuest, answer){
-	isEnc := reply[3]  // encrypt flag
-	len1 := int(reply[4])*256*256*256 + int(reply[5])*256*256 + int(reply[6])*256 +int(reply[7])
-	var data []byte
-	if isEnc == 0x01 {
-		data = []byte(reply[8:len1+24]) // meassage + MAC
-		data = decrypt(data)
-		if len(data) != len1 {
-			log.Fatalln("Data length not equal to bodysize")
-		}
-	} else {
-		data = []byte(reply[8:len1+8])
-		if len(data) != len(reply)-8 {
-			log.Fatalln("Data length not equal to bodysize")
-		}
-	}
-
-	var request _InQuest
-	var answer answer
-	content := decodeData(5,data)//5代表5数组长度，解析VBS字符串的数据成数组，
-	//request param
-	request.txid = content[0].(int64)
-	request.service = content[1].(string)
-	request.method = content[2].(string)
-	request.ctx = content[3].(map[string]interface {})
-	request.args = content[4].(map[string]interface {})
-	txid := request.txid
-	if txid != 0 {
-		receiveList[len(receiveList)] =  txid   // Receive List
-	}
-	answer = packAnswerBody(txid, data)
-	return request,answer
-}
-
-func packAnswerBody(txid int64, data []byte) answer {
-	var answer answer
-	var err error
-	arg  := make(map[string]interface{})
-	// construct the data return to client
-	answer.txid = txid
-	// judge whether is already receive the data
-	for _, value := range receiveDataList {
-		if bytes.Equal(data[1:], value){  // Remove txid
-			answer.status = 1
-			msg := "message is duplication"
-			arg = packExpArg("Receive duplication of data",1000,"218",msg,"resolveRequest*service","Receive")
-			answer.args =  arg
-			return answer
-		}
-	}
-
-	if err != nil {  // exception
-		answer.status = 1
-		arg = packExpArg("",1001,"","","","")
-	} else {  // normal
-		answer.status = 0
-		arg["first"] = "this is server reply"
-		arg["second"] = "this is Tim server"
-	}
-	answer.args =  arg
-	// record receive data
-	receiveDataList[txid] = data[1:]  // Remove txid
-	return answer
-}
-// pack expection param
-func packExpArg(name string, code int, tag string, msg string, raiser string, detail string) map[string]interface{}{
-	arg  := make(map[string]interface{})
-	arg["exname"] = name
-	arg["code"] = code
-	arg["tag"] = tag
-	arg["message"] = msg
-	arg["raiser"] = raiser
-	arg["detail"] = detail
-	return arg
-}
 // response the request
 func sendAnswer(res interface{})(rest []byte){
 	//VBS encode
@@ -338,7 +339,6 @@ func _DealCommand(incheck check) []byte{
 		verifier, _ := hex.DecodeString(verifierHex)
 		srv.SetV(verifier)
 		B := srv.GenerateB()
-		//Bbyte := srv.Set_b(B)
 		BHex := hex.EncodeToString(B)
 		outcheck.command = "SRP6a2"
 		args := make(map[string]interface{})
@@ -478,18 +478,30 @@ var commonHeaderBytes = [8]byte{'X','!'}
 
 func gracefulClose(ws *websocket.Conn) bool{
 	var res []byte
+	var err error
 	if len(receiveList) == 0 {  // All request have already dealed
 		res = theByeMessages.sendBye()
-		websocket.Message.Send(ws, res)
-		return true
+		err = websocket.Message.Send(ws, res);
+		if err != nil {
+			fmt.Println("send failed:", err, )
+			return false
+		}
 	}
-	var i int = 0
 	for len(receiveList) > 0 {
-		var txid int64 = receiveList[i]
+		fmt.Println("----receiveList--", receiveList)
+		var txid int64 = receiveList[0]
+		fmt.Println("----receive List--", receiveDataList)
 		data := receiveDataList[txid]
-		reply := string(data)
-		res = dealRequest(reply)
-		websocket.Message.Send(ws, res)
+
+		fmt.Println("--Undeal request to send ", data)
+		var answer answer
+		answer = packAnswerBody(txid)
+		res = packAnswer(0x01, txid, answer)
+		err = websocket.Message.Send(ws, res);
+		if err != nil {
+			fmt.Println("send failed:", err, )
+			return false
+		}
 	}
-	return false
+	return true
 }
