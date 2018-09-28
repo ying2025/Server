@@ -37,7 +37,7 @@ loop:
 	for {
 		var reply string
 		var res []byte
-		err = websocket.Message.Receive(ws, &reply);	//websocket接受信息
+		err = websocket.Message.Receive(ws, &reply);	//websocket receive message
 		if err == io.EOF {
 			log.Fatalln("=========== EOF ERROR")
 		} else if err != nil {
@@ -87,7 +87,7 @@ loop:
 		}
 
 /*
-		//对接收的二进制字符串进行处理
+		// deal binary string from client
 		//decode data
 		var v interface{}
 		var data []byte
@@ -114,7 +114,7 @@ loop:
 			results = append(results, x)
 		}
 	*/
-		//这里是发送消息
+		// The message will send
 		err = websocket.Message.Send(ws, res);
 		if err != nil {
 			fmt.Println("send failed:", err, )
@@ -125,9 +125,9 @@ loop:
 
 
 func main() {
-	//接受websocket的路由地址
+	// receive websocket router address
 	http.Handle("/", websocket.Handler(echo))
-	//html页面
+	//html layout
 	http.HandleFunc("/web", web)
 	//client ip 192.168.200.113:8888
 	if err := http.ListenAndServe(":8888", nil); err != nil {
@@ -136,14 +136,13 @@ func main() {
 }
 
 func web(w http.ResponseWriter, r *http.Request) {
-	//打印请求的方法
+	// print request method
 	fmt.Println("method", r.Method, r.URL)
-	if r.Method == "GET" { //如果请求方法为get显示login.html,并相应给前端
+	if r.Method == "GET" {  // Show login.html anf transfer it to  front-end
 		t, _ := template.ParseFiles("./index.html")
 		t.Execute(w, nil)
 		fmt.Println("==========:", w)
-	} else {
-		//否则走打印输出post接受的参数username和password
+	} else { // print the param (username and password) of receiving
 		fmt.Println(r.PostFormValue("username"))
 		fmt.Println(r.PostFormValue("password"))
 	}

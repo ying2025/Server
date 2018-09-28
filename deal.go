@@ -476,21 +476,15 @@ func newOutAnswer(id int64,status int64, args interface{}) (*_OutAnswer,int){
 // common header
 var commonHeaderBytes = [8]byte{'X','!'}
 
+//Gracefully close the connection with one client.
+// If receiveList is empty, directly send Bye to client
+// else deal with request firstly, send Bye to client when receiveList is empty
 func gracefulClose(ws *websocket.Conn) bool{
 	var res []byte
 	var err error
-	if len(receiveList) == 0 {  // All request have already dealed
-		res = theByeMessages.sendBye()
-		err = websocket.Message.Send(ws, res);
-		if err != nil {
-			fmt.Println("send failed:", err, )
-			return false
-		}
-	}
+
 	for len(receiveList) > 0 {
-		fmt.Println("----receiveList--", receiveList)
 		var txid int64 = receiveList[0]
-		fmt.Println("----receive List--", receiveDataList)
 		data := receiveDataList[txid]
 
 		fmt.Println("--Undeal request to send ", data)
@@ -502,6 +496,13 @@ func gracefulClose(ws *websocket.Conn) bool{
 			fmt.Println("send failed:", err, )
 			return false
 		}
+		deleteTxid(txid)
+	}
+	res = theByeMessages.sendBye()
+	err = websocket.Message.Send(ws, res);
+	if err != nil {
+		fmt.Println("send failed:", err, )
+		return false
 	}
 	return true
 }
