@@ -32,7 +32,7 @@ func echo(ws *websocket.Conn) {
 	if err != nil {
 		panic("send failed:")
 	}
-	var i int = 0
+	//var i int = 0
 loop:
 	for {
 		var reply string
@@ -60,16 +60,16 @@ loop:
 		}
 		header :=[]byte(reply[:8])
 		head := buildHeader(header)
-		fmt.Println("head: ",[]byte(reply[1:]))
+		//fmt.Println("head: ",[]byte(reply[1:]))
 		if wrong := checkHeader(head); wrong != nil {
 			break
 		}
 		switch head.Type {
 		case 'Q': 				//Q
-			i++
-			if i > 2 {
-				closeFlag = true
-			}
+			//i++
+			//if i > 2 {
+			//	closeFlag = true
+			//}
 			res = dealRequest(reply)
 			if res == nil {
 				continue
