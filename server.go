@@ -50,8 +50,9 @@ loop:
 			if suc == true {  // graceful colse
 				closeFlag = false
 			}
+			continue
 		}
-		fmt.Println("received from client: ",reply)
+		//fmt.Println("received from client: ",reply)
 		if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
 			//nonce := []byte(reply[:8])
 			//fmt.Println("---nonce-", nonce)
@@ -129,7 +130,7 @@ func main() {
 	http.Handle("/", websocket.Handler(echo))
 	//html layout
 	http.HandleFunc("/web", web)
-	//client ip 192.168.200.113:8888
+
 	if err := http.ListenAndServe(":8888", nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}

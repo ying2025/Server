@@ -105,7 +105,7 @@ func dealRequest(reply string) []byte{
 	answer = packAnswerBody(txid)
 	return packAnswer(_isEnc, txid, answer)
 }
-
+// Assemble ANSWER type message, delete the request
 func packAnswer(_isEnc uint8,txid int64, answer answer) []byte{
 	var result []byte
 	content,size := newOutAnswer(txid, answer.status,answer.args) //construct a ANSWER type message
@@ -124,7 +124,7 @@ func packAnswer(_isEnc uint8,txid int64, answer answer) []byte{
 		copy(result[:8],packet)
 		copy(result[8:],content.buf)
 	}
-	//deleteTxid(txid)
+	deleteTxid(txid)
 	return result
 }
 // delete Txid from receive List
@@ -483,8 +483,8 @@ func gracefulClose(ws *websocket.Conn) bool{
 	var res []byte
 	var err error
 
-	for len(receiveList) > 0 {
-		var txid int64 = receiveList[0]
+	for _, value := range receiveList {
+		var txid int64 = value
 		data := receiveDataList[txid]
 
 		fmt.Println("--Undeal request to send ", data)
@@ -496,7 +496,6 @@ func gracefulClose(ws *websocket.Conn) bool{
 			fmt.Println("send failed:", err, )
 			return false
 		}
-		deleteTxid(txid)
 	}
 	res = theByeMessages.sendBye()
 	err = websocket.Message.Send(ws, res);
