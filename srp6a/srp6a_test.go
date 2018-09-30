@@ -24,7 +24,7 @@ func TestSrp6a(t *testing.T) {
 	pass := "password123"
 	salt, _ := hex.DecodeString("BEB25379D1A8581EB5A727673A2441EE")
 	a, _ := hex.DecodeString("60975527035CF2AD1989806F0407210BC81EDC04E2762A56AFD529DDDA2D4393")
-
+	b, _ := hex.DecodeString("E487CB59D31AC550471E81F00F6928E01DDA08E974A004F49E61F5D105284D20")
 	//hexS := "B0DC82BA BCF30674 AE450C02 87745E79 90A3381F 63B387AA F271A10D" +
 	//	"233861E3 59B48220 F7C4693C 9AE12B0A 6F67809F 0876E2D0 13800D6C" +
 	//	"41BB59B6 D5979B5C 00A172B4 A2A5903A 0BDCAF8A 709585EB 2AFAFA8F" +
@@ -49,11 +49,14 @@ func TestSrp6a(t *testing.T) {
 	A := cli.set_a(a)
 	srv.SetA(A)
 
-	B := srv.GenerateB()
+	//B := srv.GenerateB()
+	B := srv.Set_b(b)
 	cli.SetB(B)
 
 	S1 := cli.ComputeS()
 	S2 := srv.ComputeS()
+		fmt.Println("S1", S1)
+	fmt.Println("S2",S2)
 	if !bytes.Equal(S1, S2) {
 		fmt.Println("S1", hex.EncodeToString(S1))
 		fmt.Println("S2", hex.EncodeToString(S2))

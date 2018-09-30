@@ -129,12 +129,12 @@ func packAnswer(_isEnc uint8,txid int64, answer answer) []byte{
 }
 // delete Txid from receive List
 func deleteTxid(txid int64) {
-	key := 0
-	for key <= len(receiveList) {
-		if txid == receiveList[key]{
-			delete(receiveList, key)
+	k := 0
+	for k <= len(receiveList) {
+		if txid == receiveList[k]{
+			delete(receiveList, k)
 		}
-		key++
+		k++
 	}
 }
 
@@ -144,6 +144,7 @@ func resolveRequest(isEnc uint8, reply string) (_InQuest, answer){
 	var data []byte
 	if isEnc == 0x01 {
 		data = []byte(reply[8:len1+24]) // meassage + MAC
+
 		data = decrypt(data)
 		if len(data) != len1 {
 			log.Fatalln("Data length not equal to bodysize")
@@ -154,7 +155,6 @@ func resolveRequest(isEnc uint8, reply string) (_InQuest, answer){
 			log.Fatalln("Data length not equal to bodysize")
 		}
 	}
-
 	var request _InQuest
 	var errAnswer answer
 	content := decodeData(5,data)//5代表5数组长度，解析VBS字符串的数据成数组，
@@ -318,6 +318,7 @@ func _DealCommand(incheck check) []byte{
 	N, _ := hex.DecodeString(hexN)
 	saltHex := "BEB25379D1A8581EB5A727673A2441EE"
 	hashName := "SHA1"
+	//bb, _ := hex.DecodeString("E487CB59D31AC550471E81F00F6928E01DDA08E974A004F49E61F5D105284D20")
 	// BITS is different, vHex is different fist is 1024, second is 2048
 	vHex := "7E273DE8696FFC4F4E337D05B4B375BEB0DDE1569E8FA00A9886D8129BADA1F1822223CA1A605B530E379BA4729FDC59F105B4787E5186F5C671085A1447B52A48CF1970B4FB6F8400BBF4CEBFBB168152E08AB5EA53D15C1AFF87B2B9DA6E04E058AD51CC72BFC9033B564E26480D78E955A5E29E7AB245DB2BE315E2099AFB"
 	//vHex := "400272a61e185e23784e28a16a149dc60a3790fd45856f79a7070c44f7da1ca22f711cd5bc3592171a875c7812472916de2dcfafc22f7dead8f578f1970547936f9eec686bb3df66ff57f724f6b907e83530812b4ffdbf614153e9fbfed4fc6d972da70bb23f6ccd36ad08b72567fe6bcd2bacb713f2cdb9dc8f81f897f489bb393067d66237a3e061902e72096d5ac1cd1d06c1cd648f7e56da5ec6e0094c1b448c5d63ad2addec1e3d9a3aa7118a0410e53434ddbffc60eef5b82548bda5a2f513209484d3221982ca74668a4d37330cc9cfe3b10f0db368293e43026e3a01440ac732bc1cfb983b512d10296f6951ec5e567329af8e58d7c21ea6c778b0bd"
@@ -336,6 +337,10 @@ func _DealCommand(incheck check) []byte{
 		}
 		srv.SetHash(hashName)
 		srv.SetParameter(g, N, BITS)
+
+		//salt := srp6a.GenerateSalt()
+		//saltHex := hex.EncodeToString(salt)
+		//fmt.Println("Salt", saltHex)
 		verifier, _ := hex.DecodeString(verifierHex)
 		srv.SetV(verifier)
 		B := srv.GenerateB()
@@ -353,7 +358,6 @@ func _DealCommand(incheck check) []byte{
 		M11 := incheck.args["M1"].(string)
 		A, _ := hex.DecodeString(A1)
 		M1, _ := hex.DecodeString(M11)
-
 		srv.SetA(A)
 		srv.ComputeS()
 		M1_mine := srv.ComputeM1()
@@ -363,7 +367,9 @@ func _DealCommand(incheck check) []byte{
 			args := make(map[string]interface{})
 			args["M2"] = M2
 			outcheck.args = args
+			// TODO multiple client have different.
 			key = srv.ComputeK()
+			srv =  srp6a.Srp6aServer{}
 		} else {
 			err = fmt.Errorf("Srp6a Error, M1 is different!")
 		}

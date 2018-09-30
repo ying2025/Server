@@ -33,6 +33,7 @@ func echo(ws *websocket.Conn) {
 		panic("send failed:")
 	}
 	//var i int = 0
+
 loop:
 	for {
 		var reply string
@@ -60,16 +61,17 @@ loop:
 		}
 		header :=[]byte(reply[:8])
 		head := buildHeader(header)
-		//fmt.Println("head: ",[]byte(reply[1:]))
+		fmt.Println("head: ",head)
 		if wrong := checkHeader(head); wrong != nil {
 			break
 		}
 		switch head.Type {
 		case 'Q': 				//Q
 			//i++
-			//if i > 2 {
+			//if i > 3 {
 			//	closeFlag = true
 			//}
+			//fmt.Println("i-----", i)
 			res = dealRequest(reply)
 			if res == nil {
 				continue
@@ -124,13 +126,12 @@ loop:
 	}
 }
 
-
 func main() {
 	// receive websocket router address
 	http.Handle("/", websocket.Handler(echo))
 	//html layout
 	http.HandleFunc("/web", web)
-
+	//go func() {log.Fatal("ListenAndServe:", http.ListenAndServe(":8888", nil))} ()
 	if err := http.ListenAndServe(":8888", nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
