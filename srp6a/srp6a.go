@@ -78,7 +78,7 @@ func (b *_Srp6aBase) Err() error {
 	return b.err
 }
 
-func (b *_Srp6aBase) SetHash(hash string) {
+func (b *_Srp6aBase) setHash(hash string) {
 	if strings.EqualFold(hash, "SHA1") {
 		b.hashName = "SHA1"
 		b.hasher = sha1.New()
@@ -90,7 +90,7 @@ func (b *_Srp6aBase) SetHash(hash string) {
 	}
 }
 
-func (b *_Srp6aBase) SetParameter(g int, N []byte, bits int) {
+func (b *_Srp6aBase) setParameter(g int, N []byte, bits int) {
 	if b.err != nil {
 		return
 	}
@@ -228,12 +228,11 @@ type Srp6aServer struct {
 	iA *big.Int
 }
 
-//func NewServer(g int, N []byte, bits int, hash string) *Srp6aServer {
-//	srv := &Srp6aServer{}
-//	srv.setHash(hash)
-//	srv.setParameter(g, N, bits)
-//	return srv
-//}
+func (srv *Srp6aServer) NewServer(g int, N []byte, bits int, hash string) *Srp6aServer {
+	srv.setHash(hash)
+	srv.setParameter(g, N, bits)
+	return srv
+}
 
 func (srv *Srp6aServer) SetV(v []byte)  {
 	if srv.iv == nil && srv.err == nil {
@@ -352,12 +351,11 @@ type Srp6aClient struct {
 	_v []byte
 }
 
-//func NewClient(g int, N []byte, bits int, hash string) *Srp6aClient {
-//	cli := &Srp6aClient{}
-//	cli.setHash(hash)
-//	cli.setParameter(g, N, bits)
-//	return cli
-//}
+func (cli *Srp6aClient) NewClient(g int, N []byte, bits int, hash string) *Srp6aClient {
+	cli.setHash(hash)
+	cli.setParameter(g, N, bits)
+	return cli
+}
 
 func (cli *Srp6aClient) SetIdentity(id string, pass string) {
 	cli.identity = id

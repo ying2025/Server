@@ -11,33 +11,21 @@ import (
 )
 
 var (
-	isEnc bool 	= 	true
+	IsEnc bool 	= 	true
 	closeFlag bool = false
 )
-type server struct {
-	conns       map[websocket.Conn]struct{}
-	wsConn			*websocket.Conn
-}
+
 
 func echo(ws *websocket.Conn) {
 	var err error
-	var greetByte []byte
 	fmt.Println("begin to listen")
-	if isEnc == true {
-		greetByte = _OutCheck()
-	} else {
-		greetByte = theHelloMessages.sendHello()
-	}
-	err = websocket.Message.Send(ws, greetByte)
-	if err != nil {
-		panic("send failed:")
-	}
+	isServer := JudgeIsServer(ws)
 	//var i int = 0
-
 loop:
 	for {
 		var reply string
 		var res []byte
+
 		err = websocket.Message.Receive(ws, &reply);	//websocket receive message
 		if err == io.EOF {
 			log.Fatalln("=========== EOF ERROR")
@@ -47,7 +35,6 @@ loop:
 		}
 		if closeFlag == true {
 			suc := gracefulClose(ws)
-			//ws.SetDeadline(time.Now())    // Stop receive new request
 			if suc == true {  // graceful colse
 				closeFlag = false
 			}
@@ -66,21 +53,32 @@ loop:
 			break
 		}
 		switch head.Type {
+		case 'H':
+			// TODO  service, method, ctx, args
+			res = PackQuest(IsEnc)
 		case 'Q': 				//Q
 			//i++
-			//if i > 3 {
+			//if i > 5 {
 			//	closeFlag = true
 			//}
-			//fmt.Println("i-----", i)
-			res = dealRequest(reply)
+			res = DealRequest(reply)
 			if res == nil {
 				continue
 			}
 		case 'C':
-			res = _InCheck(reply)
-			if res[4] == 0x01 { // encrypt
-				websocket.Message.Send(ws, res);
-				res = theHelloMessages.sendHello()
+			if !isServer {  // client
+				res = UnpackCheck(reply)
+			} else { // server
+				res = _InCheck(reply)
+				if res[4] == 0x01 { // encrypt
+					websocket.Message.Send(ws, res);
+					res = theHelloMessages.sendHello()
+				}
+			}
+		case 'A': 				//A
+			res = DealAnswer(reply)
+			if res == nil {
+				continue
 			}
 		case 'B':               //B
 			ws.Close()
@@ -101,6 +99,16 @@ loop:
 		} else {
 			fmt.Println("Error resdata is  %V", err)
 		}
+		//srv := &http.Server{
+		//	ReadTimeout: 30 * time.Second,
+		//	WriteTimeout: 50 * time.Second,
+		//}
+		//if d := srv.ReadTimeout; d != 0 {
+		//	ws.SetReadDeadline(time.Now().Add(d))
+		//}
+		//if d := srv.WriteTimeout; d != 0 {
+		//	ws.SetWriteDeadline(time.Now().Add(d))
+		//}
 */
 
 		//encode data
@@ -127,7 +135,7 @@ loop:
 }
 
 func main() {
-	// receive websocket router address
+	// receive websocket router addrsess
 	http.Handle("/", websocket.Handler(echo))
 	//html layout
 	http.HandleFunc("/web", web)

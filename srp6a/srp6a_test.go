@@ -35,11 +35,11 @@ func TestSrp6a(t *testing.T) {
 	const BITS = 1024
 	var srv Srp6aServer
 	var cli Srp6aClient
-	srv.SetHash("SHA1")
-	srv.SetParameter(2, N, BITS)
+	srv.setHash("SHA1")
+	srv.setParameter(2, N, BITS)
 
-	cli.SetHash("SHA1")
-	cli.SetParameter(2, N, BITS)
+	cli.setHash("SHA1")
+	cli.setParameter(2, N, BITS)
 
 	cli.SetIdentity(id, pass)
 	cli.SetSalt(salt)

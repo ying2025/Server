@@ -17,7 +17,6 @@ type check struct {
 	reserved int
 	buf []byte
 }
-
 //解析answer类型的数据结构
 type answer struct{
 	txid  int64
@@ -50,6 +49,12 @@ type _InQuest struct {
 	args map[string]interface {}
 }
 
+type _OutQuest struct {
+	txid int64
+	reserved int
+	start int
+	buf []byte
+}
 
 //消息头部结构
 type messageHeader struct {
