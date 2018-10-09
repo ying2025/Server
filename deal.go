@@ -225,7 +225,10 @@ func PackQuest(isEnc bool) []byte{
 	ctx := make(map[string]interface{})
 	arg := make(map[string]interface{})
 	msg, size := q.encodeOutQuest(q.txid,"service","method",ctx, arg)
-	sendList[len(sendList)] = q.txid  // record send to server list
+	if q.txid != 0 {
+		sendList[len(sendList)] = q.txid  // record send to server list
+	}
+	sendDataList[q.txid] = msg[1:]
 	q.txid++
 	return packMsg(isEnc, size,'Q', msg)
 }

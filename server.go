@@ -20,7 +20,7 @@ func echo(ws *websocket.Conn) {
 	var err error
 	fmt.Println("begin to listen")
 	isServer := JudgeIsServer(ws)
-	//var i int = 0
+	var i int = 0
 loop:
 	for {
 		var reply string
@@ -37,6 +37,7 @@ loop:
 			suc := gracefulClose(ws)
 			if suc == true {  // graceful colse
 				closeFlag = false
+				break
 			}
 			continue
 		}
@@ -57,10 +58,10 @@ loop:
 			// TODO  service, method, ctx, args
 			res = PackQuest(IsEnc)
 		case 'Q': 				//Q
-			//i++
-			//if i > 5 {
-			//	closeFlag = true
-			//}
+			i++
+			if i > 5 {
+				closeFlag = true
+			}
 			res = DealRequest(reply)
 			if res == nil {
 				continue
