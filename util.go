@@ -48,6 +48,10 @@ type _InQuest struct {
 	_InMsg
 	args map[string]interface {}
 }
+// return Q type message
+func (q *_InQuest) Type() MsgType {
+	return 'Q'
+}
 
 type _OutQuest struct {
 	txid int64
@@ -55,9 +59,12 @@ type _OutQuest struct {
 	start int
 	buf []byte
 }
+func (q *_OutQuest) Type() MsgType {
+	return 'Q'
+}
 
 //消息头部结构
-type messageHeader struct {
+type MessageHeader struct {
 	Magic byte	// 'X'
 	Version byte	// '!'
 	Type byte	// 'Q', 'A', 'H', 'B', 'C'

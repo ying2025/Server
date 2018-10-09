@@ -27,9 +27,31 @@ var (
 	sendDataList = make(map[int64][]byte)  // temp send data
 	_isEnc bool = false
 )
-
-func buildHeader(header []byte) messageHeader{
-	var head messageHeader
+// Judge the connection whether is Client
+// If it is client connect, return this code is not a server side
+// Or check the encrypt flag. If the flag is true, then pack Authenticate message to client, else send H type to client
+func JudgeIsServer(ws *websocket.Conn) bool{
+	isClient := ws.IsClientConn()
+	if isClient {
+		return false
+	}
+	// server side
+	var greetByte []byte
+	var err error
+	if IsEnc == true {
+		greetByte = _OutCheck()
+	} else {
+		greetByte = HelloMessage.sendHello()
+	}
+	err = websocket.Message.Send(ws, greetByte)
+	if err != nil {
+		panic("send failed:")
+	}
+	return true
+}
+// Resovle the message header
+func BuildHeader(header []byte) MessageHeader{
+	var head MessageHeader
 	head.Magic = header[0]
 	head.Version = header[1]
 	head.Type = header[2]
@@ -38,7 +60,7 @@ func buildHeader(header []byte) messageHeader{
 	return head
 }
 // check header whether is qualified
-func checkHeader(header messageHeader) error {
+func CheckHeader(header MessageHeader) error {
 	if header.Magic != 'X' || header.Version != '!' {
 		return fmt.Errorf("Unknown message Magic(%d) and Version(%d)", header.Magic, header.Version)
 	}
@@ -59,7 +81,7 @@ func checkHeader(header messageHeader) error {
 	}
 	return  nil
 }
-// pack the header
+// pack the header of XIC protocol 
 func fillHeader(size int,t MsgType) []byte{
 	var packet []byte
 	packet= append(packet,0x58) //X
@@ -72,7 +94,7 @@ func fillHeader(size int,t MsgType) []byte{
 	packet  = append(packet,byte(size))
 	return packet
 }
-// VBS Nonce
+// encode Nonce with VBS
 func packNonce() []byte{
 	b := &bytes.Buffer{}
 	enc := vbs.NewEncoder(b)
@@ -85,7 +107,7 @@ func packNonce() []byte{
 }
 
 // declare H type message
-var theHelloMessages = _HelloMessage{}
+var HelloMessage = _HelloMessage{}
 
 // return H type
 func (m _HelloMessage) Type() MsgType {
@@ -98,54 +120,53 @@ var helloMessageBytes = [8]byte{'X','!','H'}
 func (m _HelloMessage) sendHello() []byte {
 	return helloMessageBytes[:]
 }
-
-
-// return Q type message
-func (q *_InQuest) Type() MsgType {
-	return 'Q'
-}
 // return a decode Q type data
-func newInQuest(buf []byte) *_InQuest {
-	q := &_InQuest{}
-	dec := vbs.NewDecoderBytes(buf)
-	dec.Decode(&q.txid)
-	dec.Decode(&q.service)
-	dec.Decode(&q.method)
-	dec.Decode(&q.ctx)
-	q.buf = buf
-	return q
-}
+//func decodeInQuest(buf []byte) *_InQuest {
+//	q := &_InQuest{}
+//	dec := vbs.NewDecoderBytes(buf)
+//	dec.Decode(&q.txid)
+//	dec.Decode(&q.service)
+//	dec.Decode(&q.method)
+//	dec.Decode(&q.ctx)
+//	q.buf = buf
+//	return q
+//}
+
 // resolve the request data from client that type is Q
+// If txid is 0, do nothing, else if the message has alread recceived, pack the error message to client.
+// else pack the answer to client
 // Return ANSWER type message
 func  DealRequest(reply string) []byte{
-	var inRequest _InQuest
-	_isEnc := reply[3]  // encrypt flag
-	request, errAnswer := inRequest.resolveRequest(_isEnc, reply) //resovle request
+	q := & _InQuest{}
+	isEnc := reply[3]  // encrypt flag
+	request, errAnswer := q.resolveRequest(isEnc, reply) //resovle request
 
-	txid := request.txid
-	if txid == 0 {  // txid is 0, server is no response
+	txId := request.txid
+	if txId == 0 {  // txid is 0, server is no response
 		return nil
 	}
 	if request.repeatFlag {   // repeat data, direct pack
-		return packAnswer(_isEnc, txid, errAnswer)
+		return packAnswer(isEnc, txId, errAnswer)
 	}
-	var answer answer
-	answer = packAnswerBody(txid)
-	return packAnswer(_isEnc, txid, answer)
+	var a answer
+	a = packAnswerBody(txId)
+	return packAnswer(isEnc, txId, a)
 }
 // resolve Q type message from client
-func (inRequest _InQuest) resolveRequest(isEnc uint8, reply string) (_InQuest, answer){
+// Get the message body, decode data with VBS, get the param.
+// Judge whether it receive the same message with different txid, If it is, then pack the error answer to client
+// Or if txid is not equal 0, record the receive List. Record receive data list
+func (q _InQuest) resolveRequest(isEnc uint8, reply string) (_InQuest, answer){
 	var errAnswer answer
 	data := getData(isEnc, reply)
-	content := decodeData(5,data)//5代表5数组长度，解析VBS字符串的数据成数组，
+	content := decodeData(5,data)// 5 represent the length of content contain 5 different part, decode data with vbs
 	//request param
-	inRequest.txid = content[0].(int64)
-	inRequest.service = content[1].(string)
-	inRequest.method = content[2].(string)
-	inRequest.ctx = content[3].(map[string]interface {})
-	inRequest.args = content[4].(map[string]interface {})
-	txid := inRequest.txid
-
+	q.txid = content[0].(int64)
+	q.service = content[1].(string)
+	q.method = content[2].(string)
+	q.ctx = content[3].(map[string]interface {})
+	q.args = content[4].(map[string]interface {})
+	txId := q.txid
 	// judge whether is already receive the data
 	for _, value := range receiveDataList {
 		if bytes.Equal(data[1:], value){  // Remove txid
@@ -153,16 +174,16 @@ func (inRequest _InQuest) resolveRequest(isEnc uint8, reply string) (_InQuest, a
 			msg := "message is duplication"
 			arg := packExpArg("Receive duplication of data",1000,"218",msg,"resolveRequest*service","Receive")
 			errAnswer.args =  arg
-			inRequest.repeatFlag = true
-			return inRequest, errAnswer
+			q.repeatFlag = true
+			return q, errAnswer
 		}
 	}
-	if txid != 0 {
-		receiveList[len(receiveList)] =  txid   // Receive List
+	if txId != 0 {
+		receiveList[len(receiveList)] =  txId   // Receive List
 	}
 	// record receive data
-	receiveDataList[txid] = data[1:]  // Remove txid
-	return inRequest, errAnswer
+	receiveDataList[txId] = data[1:]  // Remove txid
+	return q, errAnswer
 }
 // Get the message body, If it encrypt, then decrypt it
 func getData(isEnc uint8, reply string) []byte{
@@ -183,75 +204,32 @@ func getData(isEnc uint8, reply string) []byte{
 	return data
 }
 // Deal A type message
+// Get answer type message
 func DealAnswer(reply string) []byte {
-	var inAnswer answer
+	a := &answer{}
 	isEnc := reply[3]  // encrypt flag
 	data := getData(isEnc, reply)
-	content := decodeData(3,data)//5代表5数组长度，解析VBS字符串的数据成数组，
-	inAnswer.txid = content[0].(int64)
-	inAnswer.status = content[1].(int64)
-	inAnswer.args = content[2].(map[string]interface{})
-	if inAnswer.status != 0 {
-		fmt.Println("Error: ", inAnswer.args)
+	content := decodeData(3,data)// decode data as array, and the length is 3.
+	a.txid = content[0].(int64)
+	a.status = content[1].(int64)
+	a.args = content[2].(map[string]interface{})
+	if a.status != 0 {
+		fmt.Errorf("Error: ", a.args)
 	}
+	deleteTxId(a.txid, sendList) // delete txId that send from server
 	return nil
-}
-// Assemble ANSWER type message, delete the request
-func packAnswer(_isEnc uint8,txid int64, answer answer) []byte{
-	content,size := newOutAnswer(txid, answer.status,answer.args) //construct a ANSWER type message
-	isEnc := ( _isEnc == 0x01)
-
-	var result []byte
-	result = packMsg(isEnc, size,'A', content.buf)
-	//packet := fillHeader(size,'A')// fill header message
-	//if _isEnc == 0x01 {
-	//	result = make([]byte, size+32)  //encrypt data send to client
-	//	// nonce+header+msg(msg+MAC)
-	//	noncePack := packNonce()
-	//	copy(result[:8],noncePack)
-	//	copy(result[8:16],packet)
-	//	result[11] = 0x01
-	//	msg := encrypt(content.buf)
-	//	copy(result[16:], msg)
-	//} else {
-	//	result = make([]byte, size+8, 2*size)  // data send to client
-	//	copy(result[:8],packet)
-	//	copy(result[8:],content.buf)
-	//}
-	deleteTxid(txid) // delete txid
-	return result
-}
-
-func (q *_OutQuest) Type() MsgType {
-	return 'Q'
 }
 // pack Q type data
 func PackQuest(isEnc bool) []byte{
 	q := &_OutQuest{txid:1}
 	ctx := make(map[string]interface{})
 	arg := make(map[string]interface{})
-	msg, size := q.newOutQuest(q.txid,"service","method",ctx, arg)
+	msg, size := q.encodeOutQuest(q.txid,"service","method",ctx, arg)
 	sendList[len(sendList)] = q.txid  // record send to server list
 	q.txid++
 	return packMsg(isEnc, size,'Q', msg)
-	//var result []byte
-	//packet := fillHeader(size,'Q')// fill header message
-	//if isEnc == true {
-	//	result = make([]byte, size+32)
-	//	nonceNum := packNonce()
-	//	copy(result[:8], nonceNum)
-	//	copy(result[8:16],packet)
-	//	result[11] = 0x01
-	//	msg = encrypt(msg)
-	//	copy(result[16:],msg)
-	//} else {
-	//	result = make([]byte, len(msg)+8, len(msg)*2)
-	//	copy(result[:8],packet)
-	//	copy(result[8:],msg)
-	//}
-	//return result
 }
-
+// pack header and message, if the encrypt flags is true pack nonce, header, message
 func packMsg(isEnc bool, size int, msgType MsgType, msg []byte) []byte{
 	var result []byte
 	packet := fillHeader(size, msgType)// fill header message
@@ -270,11 +248,11 @@ func packMsg(isEnc bool, size int, msgType MsgType, msg []byte) []byte{
 	}
 	return result
 }
-
-func (q _OutQuest) newOutQuest(txid int64, service, method string, ctx Context, args interface{}) ([]byte, int) {
+// encode Q type message
+func (q _OutQuest) encodeOutQuest(txId int64, service, method string, ctx Context, args interface{}) ([]byte, int) {
 	b := &bytes.Buffer{}
 	enc := vbs.NewEncoder(b)
-	enc.Encode(txid)
+	enc.Encode(txId)
 	enc.Encode(service)
 	enc.Encode(method)
 	enc.Encode(ctx)
@@ -287,7 +265,7 @@ func (q _OutQuest) newOutQuest(txid int64, service, method string, ctx Context, 
 }
 
 // encode A type message
-func newOutAnswer(id int64,status int64, args interface{}) (*_OutAnswer,int){
+func encodeOutAnswer(id int64,status int64, args interface{}) (*_OutAnswer,int){
 	a := &_OutAnswer{txid:id, start:-1}
 	b := &bytes.Buffer{}
 	enc := vbs.NewEncoder(b)
@@ -301,23 +279,33 @@ func newOutAnswer(id int64,status int64, args interface{}) (*_OutAnswer,int){
 	a.buf = b.Bytes()
 	return a,enc.Size()
 }
-
+// pack answer message
 func packAnswerBody(txid int64) answer {
-	var answer answer
+	var a answer
 	var err error
 	arg  := make(map[string]interface{})
 	// construct the data return to client
-	answer.txid = txid
+	a.txid = txid
 	if err != nil {  // exception
-		answer.status = 1
+		a.status = 1
 		arg = packExpArg("",1001,"","","","")
 	} else {  // normal
-		answer.status = 0
+		a.status = 0
 		arg["first"] = "this is server reply"
 		arg["second"] = "this is Tim server"
 	}
-	answer.args =  arg
-	return answer
+	a.args =  arg
+	return a
+}
+// Assemble ANSWER type message
+// pack answer with VBS, then assemble header and message, final delete the txid that already resolve
+func packAnswer(encFlag uint8,txId int64, a answer) []byte{
+	content,size := encodeOutAnswer(txId, a.status,a.args) //construct a ANSWER type message
+	isEnc := encFlag == 0x01
+	var result []byte
+	result = packMsg(isEnc, size,'A', content.buf)
+	deleteTxId(txId, receiveList) // delete txId
+	return result
 }
 // pack expection param
 func packExpArg(name string, code int, tag string, msg string, raiser string, detail string) map[string]interface{}{
@@ -374,40 +362,37 @@ func decrypt(cipherMsg []byte) ([]byte){
 	n := len(cipherMsg) - eax.BLOCK_SIZE
 	return out[:n]
 }
-
+// Resolve C type message, get command and args
+// According to command, send different command and param.
 func UnpackCheck(reply string) []byte{
-	var inCheck check
+	c := &check{}
 	data := getData(0x00, reply)
 	content := decodeData(2,data)//2代表2数组长度，解析VBS字符串的数据成数组，
-	inCheck.command = content[0].(string)
-	inCheck.args = content[1].(map[string]interface{})
-    result := handleCmd(inCheck)
+	c.command = content[0].(string)
+	c.args = content[1].(map[string]interface{})
+    result := handleCmd(c)
 	return result
 }
-
-func handleCmd(inCheck check) []byte{
+// Judge what type of command, then send the reference message to client
+func handleCmd(c *check) []byte{
 	var msg []byte
-	switch(inCheck.command) {
+	switch c.command {
 		case "FORBIDDEN":
-			reason := inCheck.args["reason"]
+			reason := c.args["reason"]
 			fmt.Errorf("Authentication Exception", reason)
 		case "AUTHENTICATE":
-			msg = sendSrp6a1(inCheck.args)
+			msg = sendSrp6a1(c.args)
 		case "SRP6a2":
-			msg = sendSrp6a3(inCheck.args)
+			msg = sendSrp6a3(c.args)
 		case "SRP6a4":
-			msg = verifySrp6aM2(inCheck.args)
+			msg = verifySrp6aM2(c.args)
 		default:
 			fmt.Errorf("Unknown command type !")
 	}
 	return msg
 }
 var cli srp6a.Srp6aClient
-/**
- *  @dev sendSrp6a1
- *  Fun: create client object, set id and password of the client, send id to server.
- *  @param {args}  Srp6a message round
- */
+ // create client object, set id and password of the client, send id to server.
 func sendSrp6a1(args map[string]interface{}) []byte{
 	method := args["method"]
 	if method != "SRP6a" {
@@ -421,12 +406,8 @@ func sendSrp6a1(args map[string]interface{}) []byte{
 	arg["I"] = identity
 	return packCheckCmd(command, arg)
 }
-/**
- *  @dev sendSrp6a3
- *  Fun: set param of the client, generate A, compute M1.
- *           Send A and M1 to Server.
- *  @param {args}  Srp6a message round
- */
+ // set param of the client, generate A, compute M1.
+ // Send A and M1 to Server.
 func sendSrp6a3(args map[string]interface{}) []byte{
 	command := "SRP6a3"
 	hash := args["hash"].(string)
@@ -451,11 +432,7 @@ func sendSrp6a3(args map[string]interface{}) []byte{
 	arg["M1"] = M11
 	return packCheckCmd(command, arg)
 }
-/**
- *  @dev verifySrp6aM2
- *  Fun: According to srp6a, Compute M2, verify server send M2. Confirm the public key.
- *  @param {args} param
- */
+ // According to srp6a, Compute M2, verify server send M2. Confirm the public key.
 func verifySrp6aM2(args map[string]interface{}) []byte{
 	M2hex := args["M2"].(string)
 	M2_mine := cli.ComputeM2()
@@ -463,17 +440,14 @@ func verifySrp6aM2(args map[string]interface{}) []byte{
 	if !bytes.Equal(M2_mine, M2) {
 		panic("srp6a M2 not equal")
 	}
+	cli = srp6a.Srp6aClient{} // clear client
 	K := cli.ComputeK()
 	key = K
 	_isEnc = true
 	return nil
 }
-/**
- *  @dev packCheckCmd
- *  Fun: Pack the Srp6a message round
- *  @param {command} command
- *  @param {args}  Srp6a message round
- */
+ // pack command and args with VBS
+ // result contain header and C type message that encode with VBS
 func packCheckCmd(command string, args map[string]interface{}) []byte{
 	var err error
 	b := &bytes.Buffer{}
@@ -485,7 +459,7 @@ func packCheckCmd(command string, args map[string]interface{}) []byte{
 	}
 	result := make([]byte, enc.Size()+8, (enc.Size())*2) // data to send to client
 	packet := fillHeader(enc.Size(),'C')
-	if command == "SRP6a4" {  // encrypt
+	if command == "SRP6a4" {  // encrypt flag. If the client verify success with M2, then it can send H type message
 		packet[4] = 0x01
 	}
 	copy(result[:8],packet)
@@ -493,37 +467,16 @@ func packCheckCmd(command string, args map[string]interface{}) []byte{
 	return result
 }
 
-
 // resolve C type data
-func  _InCheck(reply string) []byte{
-	var incheck check
-	data :=getData(0x00, reply)
+// Get data body, then decode the data with vbs
+// According to command, send the reference message to client.
+func  DealCheck(reply string) []byte{
+	c := &check{}
+	data := getData(0x00, reply)
 	content := decodeData(2,data)
-	incheck.command = content[0].(string)
-	incheck.args =  content[1].(map[string]interface{})
-	return incheck.dealCommand(incheck)
-}
-// Judge the connection whether is Client
-// If it is client connect, return this code is not a server side
-// Or check the encrypt flag. If the flag is true, then pack Authenticate message to client, else send H type to client
-func JudgeIsServer(ws *websocket.Conn) bool{
-	isClient := ws.IsClientConn()
-    if isClient {
-    	return false
-	}
-	// server side
-	var greetByte []byte
-	var err error
-	if IsEnc == true {
-		greetByte = _OutCheck()
-	} else {
-		greetByte = theHelloMessages.sendHello()
-	}
-	err = websocket.Message.Send(ws, greetByte)
-	if err != nil {
-		panic("send failed:")
-	}
-	return true
+	c.command = content[0].(string)
+	c.args =  content[1].(map[string]interface{})
+	return c.dealCommand(c)
 }
 
 var srv srp6a.Srp6aServer
@@ -532,30 +485,12 @@ var srv srp6a.Srp6aServer
 //  pack the command and args, then decode outcheck with VBS
 // pack header and encode outcheck message, then send the C type message
 func  _OutCheck() []byte{
-	var outcheck check
-	outcheck.command = "AUTHENTICATE"
+	c := &check{}
+	c.command = "AUTHENTICATE"
 	args := make(map[string]interface{})
 	args["method"] = "SRP6a"
-	outcheck.args = args
-	return packCheckCmd(outcheck.command, outcheck.args)
-	//vbs encode check data
-	//a := &check{}
-	//b := &bytes.Buffer{}
-	//enc := vbs.NewEncoder(b)
-	//a.reserved = b.Len()
-	//enc.Encode(outcheck.command)
-	//err := enc.Encode(outcheck.args)
-	//if err != nil {
-	//	panic("vbs.Encoder error")
-	//}
-	//a.buf = b.Bytes()
-	//
-	//result := make([]byte, enc.Size()+8, (enc.Size())*2) // data to send to client
-	//packet := fillHeader(enc.Size(),'C')
-	//copy(result[:8],packet)
-	//copy(result[8:],a.buf)
-	//return result
-
+	c.args = args
+	return packCheckCmd(c.command, c.args)
 }
 
 //Negotiate Secret key
@@ -563,8 +498,8 @@ func  _OutCheck() []byte{
 // If it is "SRP6a3" compute M1, compare M1 with the M1 that client transfer .
 // If them is equal, then compute M2, pack M2 with command
 // else negotita fail.
-func (outcheck *check) dealCommand(incheck check) []byte{
-	cmd := incheck.command
+func (outcheck *check) dealCommand(c *check) []byte{
+	cmd := c.command
 	hexN := "EEAF0AB9ADB38DD69C33F80AFA8FC5E86072618775FF3C0B9EA2314C" +
 		"9C256576D674DF7496EA81D3383B4813D692C6E0E0D5D8E250B98BE4" +
 		"8E495C1D6089DAD15DC7D7B46154D6B6CE8EF4AD69B15D4982559B29" +
@@ -590,7 +525,7 @@ func (outcheck *check) dealCommand(incheck check) []byte{
 	const BITS = 1024
 	var err error
 	if cmd == "SRP6a1"{
-		id := incheck.args["I"].(string)
+		id := c.args["I"].(string)
 		var verifierHex string
 		if _, ok := idPass[id]; ok {
 			verifierHex = idPass[id]
@@ -598,8 +533,6 @@ func (outcheck *check) dealCommand(incheck check) []byte{
 			panic("Cann't find this user!")
 		}
 		srv.NewServer(g, N, BITS, hashName)
-		//srv.SetHash(hashName)
-		//srv.SetParameter(g, N, BITS)
 		//salt := srp6a.GenerateSalt()
 		//saltHex := hex.EncodeToString(salt)
 		//fmt.Println("Salt", saltHex)
@@ -616,8 +549,8 @@ func (outcheck *check) dealCommand(incheck check) []byte{
 		args["N"] = hexN
 		outcheck.args = args
 	} else if cmd == "SRP6a3"{
-		A1 := incheck.args["A"].(string)
-		M11 := incheck.args["M1"].(string)
+		A1 := c.args["A"].(string)
+		M11 := c.args["M1"].(string)
 		A, _ := hex.DecodeString(A1)
 		M1, _ := hex.DecodeString(M11)
 		srv.SetA(A)
@@ -645,21 +578,6 @@ func (outcheck *check) dealCommand(incheck check) []byte{
 		outcheck.args = args
 	}
 	return packCheckCmd(outcheck.command, outcheck.args)
-	//b := &bytes.Buffer{}
-	//enc := vbs.NewEncoder(b)
-	//enc.Encode(outcheck.command)
-	//err = enc.Encode(outcheck.args)
-	//if err != nil {
-	//	panic("vbs.Encoder error")
-	//}
-	//result := make([]byte, enc.Size()+8, (enc.Size())*2) // data to send to client
-	//packet := fillHeader(enc.Size(),'C')
-	//if outcheck.command == "SRP6a4" {  // encrypt
-	//	packet[4] = 0x01
-	//}
-	//copy(result[:8],packet)
-	//copy(result[8:],b.Bytes())
-	//return result
 }
 
 // declare B type message
@@ -689,13 +607,13 @@ func gracefulClose(ws *websocket.Conn) bool{
 	var err error
 
 	for _, value := range receiveList {
-		var txid int64 = value
-		data := receiveDataList[txid]
+		var txId int64 = value
+		data := receiveDataList[txId]
 		fmt.Println("--Undeal request to send ", data)
 
-		var answer answer
-		answer = packAnswerBody(txid)
-		res = packAnswer(0x01, txid, answer)
+		var a answer
+		a = packAnswerBody(txId)
+		res = packAnswer(0x01, txId, a)
 		err = websocket.Message.Send(ws, res);
 		if err != nil {
 			fmt.Println("send failed:", err, )
@@ -711,12 +629,12 @@ func gracefulClose(ws *websocket.Conn) bool{
 	return true
 }
 
-// delete Txid from receive List
-func deleteTxid(txid int64) {
+// delete TxId from receive List
+func deleteTxId(txId int64, dataList map[int]int64) {
 	k := 0
-	for k <= len(receiveList) {
-		if txid == receiveList[k]{
-			delete(receiveList, k)
+	for k <= len(dataList) {
+		if txId == dataList[k]{
+			delete(dataList, k)
 		}
 		k++
 	}

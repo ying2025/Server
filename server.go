@@ -47,9 +47,9 @@ loop:
 			reply = reply[8:]
 		}
 		header :=[]byte(reply[:8])
-		head := buildHeader(header)
+		head := BuildHeader(header)
 		fmt.Println("head: ",head)
-		if wrong := checkHeader(head); wrong != nil {
+		if wrong := CheckHeader(head); wrong != nil {
 			break
 		}
 		switch head.Type {
@@ -69,10 +69,10 @@ loop:
 			if !isServer {  // client
 				res = UnpackCheck(reply)
 			} else { // server
-				res = _InCheck(reply)
+				res = DealCheck(reply)
 				if res[4] == 0x01 { // encrypt
 					websocket.Message.Send(ws, res);
-					res = theHelloMessages.sendHello()
+					res = HelloMessage.sendHello()
 				}
 			}
 		case 'A': 				//A
