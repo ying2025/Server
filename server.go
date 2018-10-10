@@ -16,9 +16,9 @@ var (
 )
 type Client struct {
 	send_nonce 		int64
-	key 			[]byte
-	nonceHex 		string
-	headerHex 		string
+	Key []byte
+	NonceHex 		string
+	HeaderHex 		string
 	receiveList 	map[int]int64
 	sendList		map[int]int64
 	receiveDataList map[int64][]byte  // temp receive data
@@ -28,35 +28,31 @@ type Client struct {
 type ServerConn struct {
 	Client
 	ws 		*websocket.Conn
-	//conns   map[websocket.Conn]Client
 }
 
 func (srvConn *ServerConn) newServer(ws *websocket.Conn){
 	srvConn.ws 						  = ws
 	srvConn.send_nonce    	  		  = 1
-	srvConn.nonceHex    		 	  = "22E7ADD93CFC6393C57EC0B3C17D6B44"
-	srvConn.headerHex   		  	  = "126735FCC320D25A"
+	srvConn.NonceHex    		 	  = "22E7ADD93CFC6393C57EC0B3C17D6B44"
+	srvConn.HeaderHex   		  	  = "126735FCC320D25A"
 	srvConn.receiveList 		      = make(map[int]int64)
-	srvConn.sendList    		 	  = make(map[int]int64)
+	srvConn.sendList    		      = make(map[int]int64)
 	srvConn.receiveDataList    		  = make(map[int64][]byte)
 	srvConn.sendDataList   	  		  = make(map[int64][]byte)
-	//srvConn.conns 					  = make(map[websocket.Conn]Client)
-	//srvConn.conns[*ws] = srvConn.Client
 }
 
 func echo(ws *websocket.Conn) {
 	var err error
 	server := &ServerConn{}
+	server.newServer(ws)
 	fmt.Println("begin to listen")
 	isServer := JudgeIsServer(ws)
-	if isServer {
-		server.newServer(ws)
-	}
-	var i int = 0
+	//var i int = 0
 loop:
 	for {
 		var reply string
 		var res []byte
+
 		err = websocket.Message.Receive(ws, &reply);	//websocket receive message
 		if err == io.EOF {
 			log.Fatalln("=========== EOF ERROR")
@@ -65,7 +61,7 @@ loop:
 			break
 		}
 		if closeFlag == true {
-			suc := gracefulClose(ws)
+			suc := GracefulClose(server)
 			if suc == true {  // graceful colse
 				closeFlag = false
 				break
@@ -87,28 +83,28 @@ loop:
 		switch head.Type {
 		case 'H':
 			// TODO  service, method, ctx, args
-			res = PackQuest(IsEnc)
+			res = PackQuest(server, IsEnc)
 		case 'Q': 				//Q
-			i++
-			if i > 5 {
-				closeFlag = true
-			}
-			res = DealRequest(reply)
+			//i++
+			//if i > 5 {
+			//	closeFlag = true
+			//}
+			res = DealRequest(server, reply)
 			if res == nil {
 				continue
 			}
 		case 'C':
 			if !isServer {  // client
-				res = UnpackCheck(reply)
+				res = UnpackCheck(server, reply)
 			} else { // server
-				res = DealCheck(reply)
+				res = DealCheck(server, reply)
 				if res[4] == 0x01 { // encrypt
 					websocket.Message.Send(ws, res);
 					res = HelloMessage.sendHello()
 				}
 			}
 		case 'A': 				//A
-			res = DealAnswer(reply)
+			res = DealAnswer(server, reply)
 			if res == nil {
 				continue
 			}
