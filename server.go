@@ -14,18 +14,49 @@ var (
 	IsEnc bool 	= 	true
 	closeFlag bool = false
 )
+type Client struct {
+	send_nonce 		int64
+	key 			[]byte
+	nonceHex 		string
+	headerHex 		string
+	receiveList 	map[int]int64
+	sendList		map[int]int64
+	receiveDataList map[int64][]byte  // temp receive data
+	sendDataList 	map[int64][]byte  // temp send data
+}
 
+type ServerConn struct {
+	Client
+	ws 		*websocket.Conn
+	//conns   map[websocket.Conn]Client
+}
+
+func (srvConn *ServerConn) newServer(ws *websocket.Conn){
+	srvConn.ws 						  = ws
+	srvConn.send_nonce    	  		  = 1
+	srvConn.nonceHex    		 	  = "22E7ADD93CFC6393C57EC0B3C17D6B44"
+	srvConn.headerHex   		  	  = "126735FCC320D25A"
+	srvConn.receiveList 		      = make(map[int]int64)
+	srvConn.sendList    		 	  = make(map[int]int64)
+	srvConn.receiveDataList    		  = make(map[int64][]byte)
+	srvConn.sendDataList   	  		  = make(map[int64][]byte)
+	//srvConn.conns 					  = make(map[websocket.Conn]Client)
+	//srvConn.conns[*ws] = srvConn.Client
+}
 
 func echo(ws *websocket.Conn) {
 	var err error
+	server := &ServerConn{}
 	fmt.Println("begin to listen")
 	isServer := JudgeIsServer(ws)
+	if isServer {
+		server.newServer(ws)
+	}
 	var i int = 0
 loop:
 	for {
 		var reply string
 		var res []byte
-
 		err = websocket.Message.Receive(ws, &reply);	//websocket receive message
 		if err == io.EOF {
 			log.Fatalln("=========== EOF ERROR")
