@@ -163,38 +163,6 @@ func (q _InQuest) resolveRequest(srvConn *ServerConn, isEnc uint8, reply string)
 	srvConn.ReceiveDataList[txId] = data[1:]  // Remove txid
 	return *content, errAnswer
 }
-//func (q _InQuest) resolveRequest(srvConn *ServerConn, isEnc uint8, reply string) (_InQuest, answer){
-//	var errAnswer answer
-//	data := getData(srvConn, isEnc, reply)
-//	qq := decodeQuest(data)
-//	fmt.Println("Request", q.txid);
-//	content := decodeData(5,data)// 5 represent the length of content contain 5 different part, decode data with vbs
-//	//request param
-//	q.txid = content[0].(int64)
-//	txId := q.txid
-//	// judge whether is already receive the data
-//	for _, value := range srvConn.ReceiveDataList {
-//		if bytes.Equal(data[1:], value){  // Remove txid
-//			errAnswer.status = 1
-//			msg := "message is duplication"
-//			arg := packExpAnswerArg("Receive duplication of data",1000,"218",msg,"resolveRequest*service","Receive")
-//			errAnswer.args =  arg
-//			q.repeatFlag = true
-//			return q, errAnswer
-//		}
-//	}
-//	q.service = content[1].(string)
-//	q.method = content[2].(string)
-//	q.ctx = content[3].(map[string]interface {})
-//	q.args = content[4].(map[string]interface {})
-//
-//	if txId != 0 {
-//		srvConn.ReceiveList[len(srvConn.ReceiveList)] = txId // Receive List
-//	}
-//	// record receive data
-//	srvConn.ReceiveDataList[txId] = data[1:]  // Remove txid
-//	return q, errAnswer
-//}
 // Get the message body, If it encrypt, then decrypt it
 func getData(srvConn *ServerConn, isEnc uint8, reply string) []byte{
 	var data []byte
@@ -215,21 +183,6 @@ func getData(srvConn *ServerConn, isEnc uint8, reply string) []byte{
 }
 // Deal A type message
 // Get answer type message
-//func DealAnswer(srvConn *ServerConn, reply string) []byte {
-//	a := &answer{}
-//	isEnc := reply[3]  // encrypt flag
-//	data := getData(srvConn, isEnc, reply)
-//	content := decodeData(3,data)// decode data as array, and the length is 3.
-//	a.txid = content[0].(int64)
-//	a.status = content[1].(int64)
-//	a.args = content[2].(map[string]interface{})
-//	if a.status != 0 {
-//		fmt.Errorf("Error: ", a.args)
-//	}
-//	deleteTxId(a.txid, srvConn.SendList) // delete txId that send from server
-//	fmt.Println("Receive reply", a.txid, a.args)
-//	return nil
-//}
 func DealAnswer(srvConn *ServerConn, reply string) []byte {
 	a := &_InAnswer{}
 	isEnc := reply[3]  // encrypt flag
@@ -358,21 +311,7 @@ func packExpAnswerArg(name string, code int, tag string, msg string, raiser stri
 	arg["detail"] = detail
 	return arg
 }
-// decode VBS data, return a array
-//func decodeData(n int,data []byte) []interface{}{
-//	var content []interface{}
-//	var err error
-//	for i := 0; i < n ;i++{
-//		var tmp interface{}
-//		data, err = vbs.UnmarshalOneItem(data, &tmp)
-//		if err != nil  {
-//			log.Fatalln("error decoding %T: %v:", data, err)
-//		}
-//		content = append(content,tmp.(interface{}))
-//	}
-//	return content
-//}
-
+// decode VBS data, return a Q type message
 func decodeQuest(buf []byte) *_InQuest {
 	q := &_InQuest{}
 	dec := vbs.NewDecoderBytes(buf)
@@ -415,15 +354,6 @@ func decrypt(srvConn *ServerConn, cipherMsg []byte) ([]byte){
 }
 // Resolve C type message, get command and args
 // According to command, send different command and param.
-//func UnpackCheck(srvConn *ServerConn, reply string) []byte{
-//	c := &check{}
-//	data := getData(srvConn, 0x00, reply)
-//	content := decodeData(2,data)//2代表2数组长度，解析VBS字符串的数据成数组，
-//	c.command = content[0].(string)
-//	c.args = content[1].(map[string]interface{})
-//    result := handleCmd(srvConn, c)
-//	return result
-//}
 func UnpackCheck(srvConn *ServerConn, reply string) []byte{
 	data := getData(srvConn, 0x00, reply)
 	content := decodeCheck(data)//2代表2数组长度，解析VBS字符串的数据成数组，
@@ -526,14 +456,6 @@ func packCheckCmd(command string, args map[string]interface{}) []byte{
 // resolve C type data
 // Get data body, then decode the data with vbs
 // According to command, send the reference message to client.
-//func  DealCheck(srvConn *ServerConn,reply string) []byte{
-//	c := &check{}
-//	data := getData(srvConn, 0x00, reply)
-//	content := decodeData(2,data)
-//	c.command = content[0].(string)
-//	c.args =  content[1].(map[string]interface{})
-//	return c.dealCommand(srvConn, c)
-//}
 func  DealCheck(srvConn *ServerConn,reply string) []byte{
 	c := &check{}
 	data := getData(srvConn, 0x00, reply)
