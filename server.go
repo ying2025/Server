@@ -20,10 +20,10 @@ type Client struct {
 	Key []byte
 	NonceHex 		string
 	HeaderHex 		string
-	ReceiveList 	map[int]int64
-	SendList		map[int]int64
-	ReceiveDataList map[int64][]byte  // temp receive data
-	SendDataList 	map[int64][]byte  // temp send data
+	ReceiveList 	map[int]int64   //  As a server receive txid list from client
+	SendList		map[int]int64    // As a client active request to server txid list
+	ReceiveDataList map[int64][]byte  //  As a server receive data list which the key is txid from client
+	SendDataList 	map[int64][]byte  // As a client active request to server data list which the key is txid
 }
 
 type ServerConn struct {

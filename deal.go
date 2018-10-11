@@ -144,10 +144,6 @@ func (q _InQuest) resolveRequest(srvConn *ServerConn, isEnc uint8, reply string)
 	content := decodeData(5,data)// 5 represent the length of content contain 5 different part, decode data with vbs
 	//request param
 	q.txid = content[0].(int64)
-	q.service = content[1].(string)
-	q.method = content[2].(string)
-	q.ctx = content[3].(map[string]interface {})
-	q.args = content[4].(map[string]interface {})
 	txId := q.txid
 	// judge whether is already receive the data
 	for _, value := range srvConn.ReceiveDataList {
@@ -160,6 +156,11 @@ func (q _InQuest) resolveRequest(srvConn *ServerConn, isEnc uint8, reply string)
 			return q, errAnswer
 		}
 	}
+	q.service = content[1].(string)
+	q.method = content[2].(string)
+	q.ctx = content[3].(map[string]interface {})
+	q.args = content[4].(map[string]interface {})
+
 	if txId != 0 {
 		srvConn.ReceiveList[len(srvConn.ReceiveList)] = txId // Receive List
 	}
@@ -203,10 +204,12 @@ func DealAnswer(srvConn *ServerConn, reply string) []byte {
 	return nil
 }
 // pack Q type data
+// record send sequence and data list.
 func PackQuest(srvConn *ServerConn, isEnc bool) []byte{
 	q := &_OutQuest{txid:srvConn.Txid}
 	ctx := make(map[string]interface{})
 	arg := make(map[string]interface{})
+
 	msg, size := q.encodeOutQuest(q.txid,"service","method",ctx, arg)
 	if q.txid != 0 {
 		srvConn.SendList[len(srvConn.SendList)] = q.txid  // record send to server list
