@@ -15,7 +15,7 @@ type check struct {
 	command string
 	args map[string]interface{}
 	reserved int
-	buf []byte
+	_InMsg
 }
 //解析answer类型的数据结构
 type answer struct{
@@ -38,6 +38,12 @@ type _InMsg struct {
 	buf []byte
 }
 
+type _InAnswer struct {
+	txid int64
+	status int
+	args	   map[string]interface{}
+	_InMsg
+}
 //解析的quest数据的结构类型
 type _InQuest struct {
 	txid int64
