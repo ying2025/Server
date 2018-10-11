@@ -17,14 +17,6 @@ const (
 )
 
 var (
-	send_nonce int64 = 1
-	key []byte
-	nonceHex string = "22E7ADD93CFC6393C57EC0B3C17D6B44"
-	headerHex string = "126735FCC320D25A"
-	receiveList =  make(map[int]int64)
-	sendList = make(map[int]int64)
-	receiveDataList = make(map[int64][]byte)  // temp receive data
-	sendDataList = make(map[int64][]byte)  // temp send data
 	_isEnc bool = false
 )
 // Judge the connection whether is Client
@@ -96,14 +88,14 @@ func fillHeader(size int,t MsgType) []byte{
 	return packet
 }
 // encode Nonce with VBS
-func packNonce() []byte{
+func packNonce(nonce int64) []byte{
 	b := &bytes.Buffer{}
 	enc := vbs.NewEncoder(b)
-	err := enc.Encode(send_nonce)
+	err := enc.Encode(nonce)
 	if err != nil {
 		panic("vbs.Encoder error when encode send_nonce")
 	}
-	send_nonce += send_add_state  // nonce increase
+	//send_nonce += send_add_state  // nonce increase
 	return b.Bytes()
 }
 
@@ -158,7 +150,7 @@ func (q _InQuest) resolveRequest(srvConn *ServerConn, isEnc uint8, reply string)
 	q.args = content[4].(map[string]interface {})
 	txId := q.txid
 	// judge whether is already receive the data
-	for _, value := range receiveDataList {
+	for _, value := range srvConn.ReceiveDataList {
 		if bytes.Equal(data[1:], value){  // Remove txid
 			errAnswer.status = 1
 			msg := "message is duplication"
@@ -169,10 +161,10 @@ func (q _InQuest) resolveRequest(srvConn *ServerConn, isEnc uint8, reply string)
 		}
 	}
 	if txId != 0 {
-		receiveList[len(receiveList)] =  txId   // Receive List
+		srvConn.ReceiveList[len(srvConn.ReceiveList)] = txId // Receive List
 	}
 	// record receive data
-	receiveDataList[txId] = data[1:]  // Remove txid
+	srvConn.ReceiveDataList[txId] = data[1:]  // Remove txid
 	return q, errAnswer
 }
 // Get the message body, If it encrypt, then decrypt it
@@ -206,20 +198,21 @@ func DealAnswer(srvConn *ServerConn, reply string) []byte {
 	if a.status != 0 {
 		fmt.Errorf("Error: ", a.args)
 	}
-	deleteTxId(a.txid, sendList) // delete txId that send from server
+	deleteTxId(a.txid, srvConn.SendList) // delete txId that send from server
+	fmt.Println("Receive reply", a.txid, a.args)
 	return nil
 }
 // pack Q type data
 func PackQuest(srvConn *ServerConn, isEnc bool) []byte{
-	q := &_OutQuest{txid:1}
+	q := &_OutQuest{txid:srvConn.Txid}
 	ctx := make(map[string]interface{})
 	arg := make(map[string]interface{})
 	msg, size := q.encodeOutQuest(q.txid,"service","method",ctx, arg)
 	if q.txid != 0 {
-		sendList[len(sendList)] = q.txid  // record send to server list
+		srvConn.SendList[len(srvConn.SendList)] = q.txid  // record send to server list
 	}
-	sendDataList[q.txid] = msg[1:]
-	q.txid++
+	srvConn.SendDataList[q.txid] = msg[1:]
+	srvConn.Txid++
 	return packMsg(srvConn, isEnc, size,'Q', msg)
 }
 // pack header and message, if the encrypt flags is true pack nonce, header, message
@@ -228,7 +221,8 @@ func packMsg(srvConn *ServerConn, isEnc bool, size int, msgType MsgType, msg []b
 	packet := fillHeader(size, msgType)// fill header message
 	if isEnc == true {
 		result = make([]byte, size+32)
-		nonceNum := packNonce()
+		nonceNum := packNonce(srvConn.Send_nonce)
+		srvConn.Send_nonce += send_add_state  // nonce increase
 		copy(result[:8], nonceNum)
 		copy(result[8:16],packet)
 		result[11] = 0x01
@@ -297,7 +291,7 @@ func packAnswer(srvConn *ServerConn, encFlag uint8,txId int64, a answer) []byte{
 	isEnc := encFlag == 0x01
 	var result []byte
 	result = packMsg(srvConn, isEnc, size,'A', content.buf)
-	deleteTxId(txId, receiveList) // delete txId
+	deleteTxId(txId, srvConn.ReceiveList) // delete txId
 	return result
 }
 // pack expection param
@@ -363,11 +357,11 @@ func UnpackCheck(srvConn *ServerConn, reply string) []byte{
 	content := decodeData(2,data)//2代表2数组长度，解析VBS字符串的数据成数组，
 	c.command = content[0].(string)
 	c.args = content[1].(map[string]interface{})
-    result := handleCmd(c)
+    result := handleCmd(srvConn, c)
 	return result
 }
 // Judge what type of command, then send the reference message to client
-func handleCmd(c *check) []byte{
+func handleCmd(srvConn *ServerConn, c *check) []byte{
 	var msg []byte
 	switch c.command {
 		case "FORBIDDEN":
@@ -378,7 +372,7 @@ func handleCmd(c *check) []byte{
 		case "SRP6a2":
 			msg = sendSrp6a3(c.args)
 		case "SRP6a4":
-			msg = verifySrp6aM2(c.args)
+			msg = verifySrp6aM2(srvConn, c.args)
 		default:
 			fmt.Errorf("Unknown command type !")
 	}
@@ -426,7 +420,7 @@ func sendSrp6a3(args map[string]interface{}) []byte{
 	return packCheckCmd(command, arg)
 }
  // According to srp6a, Compute M2, verify server send M2. Confirm the public key.
-func verifySrp6aM2(args map[string]interface{}) []byte{
+func verifySrp6aM2(srvConn *ServerConn, args map[string]interface{}) []byte{
 	M2hex := args["M2"].(string)
 	M2_mine := cli.ComputeM2()
 	M2, _ := hex.DecodeString(M2hex)
@@ -434,8 +428,7 @@ func verifySrp6aM2(args map[string]interface{}) []byte{
 		panic("srp6a M2 not equal")
 	}
 	cli = srp6a.Srp6aClient{} // clear client
-	K := cli.ComputeK()
-	key = K
+	srvConn.Key = cli.ComputeK()
 	_isEnc = true
 	return nil
 }
@@ -600,22 +593,22 @@ func GracefulClose(srvConn *ServerConn) bool{
 	var res []byte
 	var err error
 
-	for _, value := range receiveList {
+	for _, value := range srvConn.ReceiveList {
 		var txId int64 = value
-		data := receiveDataList[txId]
+		data := srvConn.ReceiveDataList[txId]
 		fmt.Println("--Undeal request to send ", data)
 
 		var a answer
 		a = packAnswerBody(txId)
 		res = packAnswer(srvConn, 0x01, txId, a)
-		err = websocket.Message.Send(srvConn.ws, res);
+		err = websocket.Message.Send(srvConn.WsConn, res);
 		if err != nil {
 			fmt.Println("send failed:", err, )
 			return false
 		}
 	}
 	res = theByeMessages.sendBye()
-	err = websocket.Message.Send(srvConn.ws, res);
+	err = websocket.Message.Send(srvConn.WsConn, res);
 	if err != nil {
 		fmt.Println("send failed:", err, )
 		return false

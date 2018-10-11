@@ -15,30 +15,32 @@ var (
 	closeFlag bool = false
 )
 type Client struct {
-	send_nonce 		int64
+	Txid			int64
+	Send_nonce 		int64
 	Key []byte
 	NonceHex 		string
 	HeaderHex 		string
-	receiveList 	map[int]int64
-	sendList		map[int]int64
-	receiveDataList map[int64][]byte  // temp receive data
-	sendDataList 	map[int64][]byte  // temp send data
+	ReceiveList 	map[int]int64
+	SendList		map[int]int64
+	ReceiveDataList map[int64][]byte  // temp receive data
+	SendDataList 	map[int64][]byte  // temp send data
 }
 
 type ServerConn struct {
 	Client
-	ws 		*websocket.Conn
+	WsConn 		*websocket.Conn
 }
 
 func (srvConn *ServerConn) newServer(ws *websocket.Conn){
-	srvConn.ws 						  = ws
-	srvConn.send_nonce    	  		  = 1
+	srvConn.WsConn 					  = ws
+	srvConn.Txid    	  		  	  = 1
+	srvConn.Send_nonce    	  		  = 1
 	srvConn.NonceHex    		 	  = "22E7ADD93CFC6393C57EC0B3C17D6B44"
 	srvConn.HeaderHex   		  	  = "126735FCC320D25A"
-	srvConn.receiveList 		      = make(map[int]int64)
-	srvConn.sendList    		      = make(map[int]int64)
-	srvConn.receiveDataList    		  = make(map[int64][]byte)
-	srvConn.sendDataList   	  		  = make(map[int64][]byte)
+	srvConn.ReceiveList 		      = make(map[int]int64)
+	srvConn.SendList    		      = make(map[int]int64)
+	srvConn.ReceiveDataList    		  = make(map[int64][]byte)
+	srvConn.SendDataList   	  		  = make(map[int64][]byte)
 }
 
 func echo(ws *websocket.Conn) {
