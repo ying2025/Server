@@ -76,13 +76,6 @@ func (q *_InQuest) Type() MsgType {
 	return 'Q'
 }
 
-type _InAnswer struct {
-	txid int64
-	status int
-	args map[string]interface {}
-	_InMsg
-}
-
 //消息头部结构
 type MessageHeader struct {
 	Magic byte	// 'X'

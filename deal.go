@@ -117,6 +117,7 @@ func UnpackCheck(srvConn *ServerConn, reply string) []byte{
 	result := handleCmd(srvConn, c)
 	return result
 }
+// decode C type message
 func decodeInCheck(buf []byte) *_InCheck {
 	c := &_InCheck{}
 	dec := vbs.NewDecoderBytes(buf)
@@ -234,6 +235,7 @@ func DealAnswer(srvConn *ServerConn, reply string) []byte {
 	deleteTxId(a.txid, srvConn.SendList) // delete txId that send from server
 	return nil
 }
+// decode answer
 func decodeInAnswer(buf []byte) *_InAnswer {
 	a := &_InAnswer{}
 	dec := vbs.NewDecoderBytes(buf)
