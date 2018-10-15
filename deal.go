@@ -98,7 +98,26 @@ func packNonce(nonce int64) []byte{
 	//send_nonce += send_add_state  // nonce increase
 	return b.Bytes()
 }
-
+// pack command and args with VBS
+// result contain header and C type message that encode with VBS
+func packCheckCmd(command string, args map[string]interface{}) []byte{
+	var err error
+	b := &bytes.Buffer{}
+	enc := vbs.NewEncoder(b)
+	enc.Encode(command)
+	err = enc.Encode(args)
+	if err != nil {
+		panic("vbs.Encoder error")
+	}
+	result := make([]byte, enc.Size()+8, (enc.Size())*2) // data to send to client
+	packet := fillHeader(enc.Size(),'C')
+	if command == "SRP6a4" {  // encrypt flag. If the client verify success with M2, then it can send H type message
+		packet[4] = 0x01
+	}
+	copy(result[:8],packet)
+	copy(result[8:],b.Bytes())
+	return result
+}
 // declare H type message
 var HelloMessage = _HelloMessage{}
 
@@ -108,6 +127,18 @@ var helloMessageBytes = [8]byte{'X','!','H'}
 // return H type message
 func (m _HelloMessage) sendHello() []byte {
 	return helloMessageBytes[:]
+}
+// server side
+// SRP6a consult the common key, return C type message data
+//  pack the command and args, then decode outcheck with VBS
+// pack header and encode outcheck message, then send the C type message
+func  _OutCheck() []byte{
+	c := &check{}
+	c.command = "AUTHENTICATE"
+	args := make(map[string]interface{})
+	args["method"] = "SRP6a"
+	c.args = args
+	return packCheckCmd(c.command, c.args)
 }
 // Resolve C type message, get command and args
 // According to command, send different command and param.
@@ -127,6 +158,7 @@ func decodeInCheck(buf []byte) *_InCheck {
 	c.buf = buf
 	return c
 }
+
 // Judge what type of command, then send the reference message to client
 func handleCmd(srvConn *ServerConn, c *_InCheck) []byte{
 	var msg []byte
@@ -400,7 +432,7 @@ func sendSrp6a3(args map[string]interface{}) []byte{
 	command := "SRP6a3"
 	hash := args["hash"].(string)
 	NHex := args["N"].(string)
-	g := args["g"].(int)
+	g := 	args["g"].(int)
 	sHex := args["s"].(string)
 	BHex := args["B"].(string)
 	s, _ := hex.DecodeString(sHex)
@@ -433,26 +465,6 @@ func verifySrp6aM2(srvConn *ServerConn, args map[string]interface{}) []byte{
 	_isEnc = true
 	return nil
 }
- // pack command and args with VBS
- // result contain header and C type message that encode with VBS
-func packCheckCmd(command string, args map[string]interface{}) []byte{
-	var err error
-	b := &bytes.Buffer{}
-	enc := vbs.NewEncoder(b)
-	enc.Encode(command)
-	err = enc.Encode(args)
-	if err != nil {
-		panic("vbs.Encoder error")
-	}
-	result := make([]byte, enc.Size()+8, (enc.Size())*2) // data to send to client
-	packet := fillHeader(enc.Size(),'C')
-	if command == "SRP6a4" {  // encrypt flag. If the client verify success with M2, then it can send H type message
-		packet[4] = 0x01
-	}
-	copy(result[:8],packet)
-	copy(result[8:],b.Bytes())
-	return result
-}
 
 // resolve C type data
 // Get data body, then decode the data with vbs
@@ -464,18 +476,6 @@ func  DealCheck(srvConn *ServerConn,reply string) []byte{
 }
 
 var srv srp6a.Srp6aServer
-// server side
-// SRP6a consult the common key, return C type message data
-//  pack the command and args, then decode outcheck with VBS
-// pack header and encode outcheck message, then send the C type message
-func  _OutCheck() []byte{
-	c := &check{}
-	c.command = "AUTHENTICATE"
-	args := make(map[string]interface{})
-	args["method"] = "SRP6a"
-	c.args = args
-	return packCheckCmd(c.command, c.args)
-}
 
 //Negotiate Secret key
 // Judge the command. If it "SRP6a1"  pack the "SRP6a2" and args, encode them with VBS, then pack header and encode message
@@ -503,6 +503,7 @@ func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
 	//bb, _ := hex.DecodeString("E487CB59D31AC550471E81F00F6928E01DDA08E974A004F49E61F5D105284D20")
 	// BITS is different, vHex is different fist is 1024, second is 2048
 	vHex := "7E273DE8696FFC4F4E337D05B4B375BEB0DDE1569E8FA00A9886D8129BADA1F1822223CA1A605B530E379BA4729FDC59F105B4787E5186F5C671085A1447B52A48CF1970B4FB6F8400BBF4CEBFBB168152E08AB5EA53D15C1AFF87B2B9DA6E04E058AD51CC72BFC9033B564E26480D78E955A5E29E7AB245DB2BE315E2099AFB"
+	//different hash name have different v
 	//vHex := "400272a61e185e23784e28a16a149dc60a3790fd45856f79a7070c44f7da1ca22f711cd5bc3592171a875c7812472916de2dcfafc22f7dead8f578f1970547936f9eec686bb3df66ff57f724f6b907e83530812b4ffdbf614153e9fbfed4fc6d972da70bb23f6ccd36ad08b72567fe6bcd2bacb713f2cdb9dc8f81f897f489bb393067d66237a3e061902e72096d5ac1cd1d06c1cd648f7e56da5ec6e0094c1b448c5d63ad2addec1e3d9a3aa7118a0410e53434ddbffc60eef5b82548bda5a2f513209484d3221982ca74668a4d37330cc9cfe3b10f0db368293e43026e3a01440ac732bc1cfb983b512d10296f6951ec5e567329af8e58d7c21ea6c778b0bd"
 	g := 2
 	idPass := map[string]string {"alice": vHex}
@@ -546,8 +547,6 @@ func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
 			args := make(map[string]interface{})
 			args["M2"] = M2
 			outcheck.args = args
-			// TODO multiple client have different.
-			//key = srv.ComputeK()
 			srvConn.Key = srv.ComputeK()
 			srv =  srp6a.Srp6aServer{}
 		} else {
@@ -567,12 +566,6 @@ func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
 
 // declare B type message
 var theByeMessages = _ByeMessage{}
-
-// return B type
-func (m _ByeMessage) Type() MsgType {
-	return 'B'
-}
-
 // B type message content
 var byeMessageBytes = [8]byte{'X','!','B'}
 
@@ -580,9 +573,23 @@ var byeMessageBytes = [8]byte{'X','!','B'}
 func (m _ByeMessage) sendBye() []byte {
 	return byeMessageBytes[:]
 }
-
 // common header
 var commonHeaderBytes = [8]byte{'X','!'}
+// Active request close
+func Close(srvConn *ServerConn) bool {
+	flag := false
+	var res []byte
+	flag = GracefulClose(srvConn)
+	if flag == true {
+		res = theByeMessages.sendBye()
+		err := websocket.Message.Send(srvConn.WsConn, res);
+		if err != nil {
+			fmt.Println("send failed:", err, )
+			return false
+		}
+	}
+	return flag
+}
 
 //Gracefully close the connection with one client.
 // If receiveList is empty, directly send Bye to client
@@ -605,13 +612,15 @@ func GracefulClose(srvConn *ServerConn) bool{
 			return false
 		}
 	}
-	res = theByeMessages.sendBye()
-	err = websocket.Message.Send(srvConn.WsConn, res);
-	if err != nil {
-		fmt.Println("send failed:", err, )
-		return false
+	for _, value := range srvConn.SendList {
+		var txId int64 = value
+		data := srvConn.SendDataList[txId]
+		fmt.Println("Waiting for reply data : ", data)
 	}
-	return true
+	if len(srvConn.ReceiveList) == 0 && len(srvConn.SendList) == 0 {
+		return true
+	}
+	return false
 }
 
 // delete TxId from receive List

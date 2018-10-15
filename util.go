@@ -75,7 +75,10 @@ type _InCheck struct {
 func (q *_InQuest) Type() MsgType {
 	return 'Q'
 }
-
+// return B type
+func (m _ByeMessage) Type() MsgType {
+	return 'B'
+}
 //消息头部结构
 type MessageHeader struct {
 	Magic byte	// 'X'

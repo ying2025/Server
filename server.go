@@ -53,7 +53,7 @@ func echo(ws *websocket.Conn) {
 	fmt.Println("begin to listen")
 	// Judge whether is server and do reference deal
 	isServer := JudgeIsServer(ws)
-	//var i int = 0
+	var i int = 0
 loop:
 	for {
 		var reply string
@@ -67,7 +67,7 @@ loop:
 			break
 		}
 		if closeFlag == true {
-			suc := GracefulClose(server)
+			suc := Close(server)
 			if suc == true {  // graceful colse
 				closeFlag = false
 				break
@@ -91,10 +91,10 @@ loop:
 				// TODO  service, method, ctx, args
 				res = PackQuest(server, IsEnc)
 			case 'Q': 				//Q
-				//i++
-				//if i > 5 {
-				//	closeFlag = true
-				//}
+				i++
+				if i > 3 {
+					closeFlag = true
+				}
 				res = DealRequest(server, reply)
 				if res == nil {
 					continue
@@ -115,9 +115,13 @@ loop:
 					continue
 				}
 			case 'B':               //B
-				//ws.Close()
-				GracefulClose(server)
-				break loop
+				flag := GracefulClose(server)
+				if flag {
+					ws.Close()
+					break loop
+				} else {
+					continue
+				}
 			default:
 				log.Fatalln("ERROR")
 			}
