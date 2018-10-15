@@ -17,10 +17,11 @@ var (
 type Client struct {
 	Txid			int64
 	Send_nonce 		int64
-	Key []byte
+	Key 			[]byte
 	NonceHex 		string
 	HeaderHex 		string
 	UnDealReplyList	map[int]string
+
 	ReceiveList 	map[int]int64   //  As a server receive txid list from client
 	SendList		map[int]int64    // As a client active request to server txid list
 	ReceiveDataList map[int64][]byte  //  As a server receive data list which the key is txid from client
@@ -32,7 +33,7 @@ type ServerConn struct {
 	WsConn 		*websocket.Conn
 }
 
-func (srvConn *ServerConn) newServer(ws *websocket.Conn){
+func (srvConn *ServerConn) initServerParam(ws *websocket.Conn){
 	srvConn.WsConn 					  = ws
 	srvConn.Txid    	  		  	  = 1
 	srvConn.Send_nonce    	  		  = 1
@@ -42,13 +43,15 @@ func (srvConn *ServerConn) newServer(ws *websocket.Conn){
 	srvConn.SendList    		      = make(map[int]int64)
 	srvConn.ReceiveDataList    		  = make(map[int64][]byte)
 	srvConn.SendDataList   	  		  = make(map[int64][]byte)
+
 }
 
 func echo(ws *websocket.Conn) {
 	var err error
 	server := &ServerConn{}
-	server.newServer(ws)
+	server.initServerParam(ws)
 	fmt.Println("begin to listen")
+	// Judge whether is server and do reference deal
 	isServer := JudgeIsServer(ws)
 	//var i int = 0
 loop:
@@ -77,48 +80,47 @@ loop:
 			//fmt.Println("---nonce-", nonce)
 			reply = reply[8:]
 		}
-		//server.UnDealReplyList[len(server.UnDealReplyList)] = reply
-		header :=[]byte(reply[:8])
-		head := BuildHeader(header)
+		header   :=[]byte(reply[:8])
+		head	 := GetHeader(header)
 		fmt.Println("head: ",head)
-		if wrong := CheckHeader(head); wrong != nil {
+		if err = CheckHeader(head); err != nil {
 			break
 		}
 		switch head.Type {
-		case 'H':
-			// TODO  service, method, ctx, args
-			res = PackQuest(server, IsEnc)
-		case 'Q': 				//Q
-			//i++
-			//if i > 5 {
-			//	closeFlag = true
-			//}
-			res = DealRequest(server, reply)
-			if res == nil {
-				continue
-			}
-		case 'C':
-			if !isServer {  // client
-				res = UnpackCheck(server, reply)
-			} else { // server
-				res = DealCheck(server, reply)
-				if res[4] == 0x01 { // encrypt
-					websocket.Message.Send(ws, res);
-					res = HelloMessage.sendHello()
+			case 'H':
+				// TODO  service, method, ctx, args
+				res = PackQuest(server, IsEnc)
+			case 'Q': 				//Q
+				//i++
+				//if i > 5 {
+				//	closeFlag = true
+				//}
+				res = DealRequest(server, reply)
+				if res == nil {
+					continue
 				}
+			case 'C':
+				if !isServer {  // client
+					res = UnpackCheck(server, reply)
+				} else { // server
+					res = DealCheck(server, reply)
+					if res[4] == 0x01 { // encrypt
+						websocket.Message.Send(ws, res);
+						res = HelloMessage.sendHello()
+					}
+				}
+			case 'A': 				//A
+				res = DealAnswer(server, reply)
+				if res == nil {
+					continue
+				}
+			case 'B':               //B
+				//ws.Close()
+				GracefulClose(server)
+				break loop
+			default:
+				log.Fatalln("ERROR")
 			}
-		case 'A': 				//A
-			res = DealAnswer(server, reply)
-			if res == nil {
-				continue
-			}
-		case 'B':               //B
-			//ws.Close()
-			GracefulClose(server)
-			break loop
-		default:
-			log.Fatalln("ERROR")
-		}
 
 /*
 		// deal binary string from client

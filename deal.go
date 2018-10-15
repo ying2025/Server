@@ -43,7 +43,7 @@ func JudgeIsServer(ws *websocket.Conn) bool{
 }
 
 // Resovle the message header
-func BuildHeader(header []byte) MessageHeader{
+func GetHeader(header []byte) MessageHeader{
 	var head MessageHeader
 	head.Magic = header[0]
 	head.Version = header[1]
@@ -113,7 +113,7 @@ func (m _HelloMessage) sendHello() []byte {
 // According to command, send different command and param.
 func UnpackCheck(srvConn *ServerConn, reply string) []byte{
 	data := getData(srvConn, 0x00, reply)
-	c := decodeInCheck(data)//2代表2数组长度，解析VBS字符串的数据成数组，
+	c := decodeInCheck(data)
 	result := handleCmd(srvConn, c)
 	return result
 }
