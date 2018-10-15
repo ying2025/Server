@@ -102,10 +102,6 @@ func packNonce(nonce int64) []byte{
 // declare H type message
 var HelloMessage = _HelloMessage{}
 
-// return H type
-func (m _HelloMessage) Type() MsgType {
-	return 'H'
-}
 //H type content
 var helloMessageBytes = [8]byte{'X','!','H'}
 
@@ -113,7 +109,41 @@ var helloMessageBytes = [8]byte{'X','!','H'}
 func (m _HelloMessage) sendHello() []byte {
 	return helloMessageBytes[:]
 }
-
+// Resolve C type message, get command and args
+// According to command, send different command and param.
+func UnpackCheck(srvConn *ServerConn, reply string) []byte{
+	data := getData(srvConn, 0x00, reply)
+	c := decodeInCheck(data)//2代表2数组长度，解析VBS字符串的数据成数组，
+	result := handleCmd(srvConn, c)
+	return result
+}
+func decodeInCheck(buf []byte) *_InCheck {
+	c := &_InCheck{}
+	dec := vbs.NewDecoderBytes(buf)
+	dec.Decode(&c.cmd)
+	dec.Decode(&c.args)
+	c.argsOff = dec.Size()
+	c.buf = buf
+	return c
+}
+// Judge what type of command, then send the reference message to client
+func handleCmd(srvConn *ServerConn, c *_InCheck) []byte{
+	var msg []byte
+	switch c.cmd {
+	case "FORBIDDEN":
+		reason := c.args["reason"]
+		fmt.Errorf("Authentication Exception", reason)
+	case "AUTHENTICATE":
+		msg = sendSrp6a1(c.args)
+	case "SRP6a2":
+		msg = sendSrp6a3(c.args)
+	case "SRP6a4":
+		msg = verifySrp6aM2(srvConn, c.args)
+	default:
+		fmt.Errorf("Unknown command type !")
+	}
+	return msg
+}
 // resolve the request data from client that type is Q
 // If txid is 0, do nothing, else if the message has alread recceived, pack the error message to client.
 // else pack the answer to client
@@ -141,14 +171,9 @@ func  DealRequest(srvConn *ServerConn, reply string) []byte{
 func (q _InQuest) resolveRequest(srvConn *ServerConn, isEnc uint8, reply string) (_InQuest, answer){
 	var errAnswer answer
 	data := getData(srvConn, isEnc, reply)
-	content := decodeData(5,data)// 5 represent the length of content contain 5 different part, decode data with vbs
+	content := decodeInQuest(data)
 	//request param
-	q.txid = content[0].(int64)
-	q.service = content[1].(string)
-	q.method = content[2].(string)
-	q.ctx = content[3].(map[string]interface {})
-	q.args = content[4].(map[string]interface {})
-	txId := q.txid
+	txId := content.txid
 	// judge whether is already receive the data
 	for _, value := range srvConn.ReceiveDataList {
 		if bytes.Equal(data[1:], value){  // Remove txid
@@ -156,16 +181,27 @@ func (q _InQuest) resolveRequest(srvConn *ServerConn, isEnc uint8, reply string)
 			msg := "message is duplication"
 			arg := packExpArg("Receive duplication of data",1000,"218",msg,"resolveRequest*service","Receive")
 			errAnswer.args =  arg
-			q.repeatFlag = true
-			return q, errAnswer
+			content.repeatFlag = true
+			return *content, errAnswer
 		}
 	}
 	if txId != 0 {
 		srvConn.ReceiveList[len(srvConn.ReceiveList)] = txId // Receive List
 	}
-	// record receive data
-	srvConn.ReceiveDataList[txId] = data[1:]  // Remove txid
-	return q, errAnswer
+	srvConn.ReceiveDataList[txId] = data[1:] // record receive data
+	return *content, errAnswer
+}
+// decode Q type message
+func decodeInQuest(buf []byte) *_InQuest {
+	q := &_InQuest{}
+	dec := vbs.NewDecoderBytes(buf)
+	dec.Decode(&q.txid)
+	dec.Decode(&q.service)
+	dec.Decode(&q.method)
+	dec.Decode(&q.ctx)
+	q.argsOff = dec.Size()
+	q.buf = buf
+	return q
 }
 // Get the message body, If it encrypt, then decrypt it
 func getData(srvConn *ServerConn, isEnc uint8, reply string) []byte{
@@ -188,19 +224,25 @@ func getData(srvConn *ServerConn, isEnc uint8, reply string) []byte{
 // Deal A type message
 // Get answer type message
 func DealAnswer(srvConn *ServerConn, reply string) []byte {
-	a := &answer{}
 	isEnc := reply[3]  // encrypt flag
 	data := getData(srvConn, isEnc, reply)
-	content := decodeData(3,data)// decode data as array, and the length is 3.
-	a.txid = content[0].(int64)
-	a.status = content[1].(int64)
-	a.args = content[2].(map[string]interface{})
+
+	a := decodeInAnswer(data)// decode data as array, and the length is 3.
 	if a.status != 0 {
 		fmt.Errorf("Error: ", a.args)
 	}
 	deleteTxId(a.txid, srvConn.SendList) // delete txId that send from server
-	fmt.Println("Receive reply", a.txid, a.args)
 	return nil
+}
+func decodeInAnswer(buf []byte) *_InAnswer {
+	a := &_InAnswer{}
+	dec := vbs.NewDecoderBytes(buf)
+	dec.Decode(&a.txid)
+	dec.Decode(&a.status)
+	dec.Decode(&a.args)
+	a.argsOff = dec.Size()
+	a.buf = buf
+	return a
 }
 // pack Q type data
 func PackQuest(srvConn *ServerConn, isEnc bool) []byte{
@@ -250,7 +292,6 @@ func (q _OutQuest) encodeOutQuest(txId int64, service, method string, ctx Contex
 	q.buf = b.Bytes()
 	return q.buf, enc.Size()
 }
-
 // encode A type message
 func encodeOutAnswer(id int64,status int64, args interface{}) (*_OutAnswer,int){
 	a := &_OutAnswer{txid:id, start:-1}
@@ -305,20 +346,6 @@ func packExpArg(name string, code int, tag string, msg string, raiser string, de
 	arg["detail"] = detail
 	return arg
 }
-// decode VBS data, return a array
-func decodeData(n int,data []byte) []interface{}{
-	var content []interface{}
-	var err error
-	for i := 0; i < n ;i++{
-		var tmp interface{}
-		data, err = vbs.UnmarshalOneItem(data, &tmp)
-		if err != nil  {
-			log.Fatalln("error decoding %T: %v:", data, err)
-		}
-		content = append(content,tmp.(interface{}))
-	}
-	return content
-}
 // encrypt data with EAX
 func encrypt(srvConn *ServerConn, msg []byte) []byte{
 	nonce, _ := hex.DecodeString(srvConn.NonceHex)
@@ -349,35 +376,7 @@ func decrypt(srvConn *ServerConn, cipherMsg []byte) ([]byte){
 	n := len(cipherMsg) - eax.BLOCK_SIZE
 	return out[:n]
 }
-// Resolve C type message, get command and args
-// According to command, send different command and param.
-func UnpackCheck(srvConn *ServerConn, reply string) []byte{
-	c := &check{}
-	data := getData(srvConn, 0x00, reply)
-	content := decodeData(2,data)//2代表2数组长度，解析VBS字符串的数据成数组，
-	c.command = content[0].(string)
-	c.args = content[1].(map[string]interface{})
-    result := handleCmd(srvConn, c)
-	return result
-}
-// Judge what type of command, then send the reference message to client
-func handleCmd(srvConn *ServerConn, c *check) []byte{
-	var msg []byte
-	switch c.command {
-		case "FORBIDDEN":
-			reason := c.args["reason"]
-			fmt.Errorf("Authentication Exception", reason)
-		case "AUTHENTICATE":
-			msg = sendSrp6a1(c.args)
-		case "SRP6a2":
-			msg = sendSrp6a3(c.args)
-		case "SRP6a4":
-			msg = verifySrp6aM2(srvConn, c.args)
-		default:
-			fmt.Errorf("Unknown command type !")
-	}
-	return msg
-}
+
 var cli srp6a.Srp6aClient
  // create client object, set id and password of the client, send id to server.
 func sendSrp6a1(args map[string]interface{}) []byte{
@@ -457,11 +456,8 @@ func packCheckCmd(command string, args map[string]interface{}) []byte{
 // Get data body, then decode the data with vbs
 // According to command, send the reference message to client.
 func  DealCheck(srvConn *ServerConn,reply string) []byte{
-	c := &check{}
 	data := getData(srvConn, 0x00, reply)
-	content := decodeData(2,data)
-	c.command = content[0].(string)
-	c.args =  content[1].(map[string]interface{})
+	c := decodeInCheck(data)
 	return c.dealCommand(srvConn, c)
 }
 
@@ -484,8 +480,8 @@ func  _OutCheck() []byte{
 // If it is "SRP6a3" compute M1, compare M1 with the M1 that client transfer .
 // If them is equal, then compute M2, pack M2 with command
 // else negotita fail.
-func (outcheck *check) dealCommand(srvConn *ServerConn, c *check) []byte{
-	cmd := c.command
+func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
+	cmd := c.cmd
 	hexN := "EEAF0AB9ADB38DD69C33F80AFA8FC5E86072618775FF3C0B9EA2314C" +
 		"9C256576D674DF7496EA81D3383B4813D692C6E0E0D5D8E250B98BE4" +
 		"8E495C1D6089DAD15DC7D7B46154D6B6CE8EF4AD69B15D4982559B29" +
@@ -526,7 +522,7 @@ func (outcheck *check) dealCommand(srvConn *ServerConn, c *check) []byte{
 		srv.SetV(verifier)
 		B := srv.GenerateB()
 		BHex := hex.EncodeToString(B)
-		outcheck.command = "SRP6a2"
+		outcheck.cmd = "SRP6a2"
 		args := make(map[string]interface{})
 		args["hash"] = hashName
 		args["s"] = saltHex
@@ -544,7 +540,7 @@ func (outcheck *check) dealCommand(srvConn *ServerConn, c *check) []byte{
 		M1_mine := srv.ComputeM1()
 		if bytes.Equal(M1, M1_mine) {
 			M2 := srv.ComputeM2()
-			outcheck.command = "SRP6a4"
+			outcheck.cmd = "SRP6a4"
 			args := make(map[string]interface{})
 			args["M2"] = M2
 			outcheck.args = args
@@ -559,12 +555,12 @@ func (outcheck *check) dealCommand(srvConn *ServerConn, c *check) []byte{
 		err = fmt.Errorf("XIC.WARNING", "#=client authentication failed")
 	}
 	if err != nil {
-		outcheck.command = "FORBIDDEN"
+		outcheck.cmd = "FORBIDDEN"
 		args := make(map[string]interface{})
 		args["reason"] = err
 		outcheck.args = args
 	}
-	return packCheckCmd(outcheck.command, outcheck.args)
+	return packCheckCmd(outcheck.cmd, outcheck.args)
 }
 
 // declare B type message

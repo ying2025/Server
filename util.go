@@ -9,6 +9,10 @@ type _ByeMessage struct {
 }
 type _HelloMessage struct {
 }
+// return H type
+func (m _HelloMessage) Type() MsgType {
+	return 'H'
+}
 
 //check类型的数据结构
 type check struct {
@@ -23,7 +27,15 @@ type answer struct{
 	status int64
 	args Context
 }
-
+type _OutQuest struct {
+	txid int64
+	reserved int
+	start int
+	buf []byte
+}
+func (q *_OutQuest) Type() MsgType {
+	return 'Q'
+}
 //发送出去的answer类型的数据结构
 type _OutAnswer struct {
 	txid int64
@@ -45,22 +57,24 @@ type _InQuest struct {
 	service string
 	method string
 	ctx map[string]interface {}
-	_InMsg
 	args map[string]interface {}
+	_InMsg
+}
+type _InCheck struct {
+	cmd string
+	args map[string]interface{}
+	_InMsg
 }
 // return Q type message
 func (q *_InQuest) Type() MsgType {
 	return 'Q'
 }
 
-type _OutQuest struct {
+type _InAnswer struct {
 	txid int64
-	reserved int
-	start int
-	buf []byte
-}
-func (q *_OutQuest) Type() MsgType {
-	return 'Q'
+	status int
+	args map[string]interface {}
+	_InMsg
 }
 
 //消息头部结构
