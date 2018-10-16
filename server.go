@@ -1,27 +1,30 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"golang.org/x/net/websocket"
 	"html/template" //支持模板html
 	"log"
 	"net/http"
-	"golang.org/x/net/websocket"
 
 	"io"
 )
 
 var (
 	IsEnc bool 	= 	true
-	closeFlag bool = false
 )
 type Client struct {
+	SendByteFlag    bool    // Whether already rent byte to client
+	RejectReqFlag   bool   // Reject new request
+	CloseFlag		bool   // client is to close
 	Txid			int64
 	Send_nonce 		int64
 	Key 			[]byte
 	NonceHex 		string
 	HeaderHex 		string
-	UnDealReplyList	map[int]string
-
+	NonceList       map[int][]byte
+	UnDealReplyList	map[int][]byte
 	ReceiveList 	map[int]int64   //  As a server receive txid list from client
 	SendList		map[int]int64    // As a client active request to server txid list
 	ReceiveDataList map[int64][]byte  //  As a server receive data list which the key is txid from client
@@ -35,10 +38,15 @@ type ServerConn struct {
 
 func (srvConn *ServerConn) initServerParam(ws *websocket.Conn){
 	srvConn.WsConn 					  = ws
+	srvConn.SendByteFlag			  = false
+	srvConn.CloseFlag				  = false
+	srvConn.RejectReqFlag			  = false
 	srvConn.Txid    	  		  	  = 1
 	srvConn.Send_nonce    	  		  = 1
 	srvConn.NonceHex    		 	  = "22E7ADD93CFC6393C57EC0B3C17D6B44"
 	srvConn.HeaderHex   		  	  = "126735FCC320D25A"
+	srvConn.NonceList				  = make(map[int][]byte)
+	srvConn.UnDealReplyList 		  = make(map[int][]byte)
 	srvConn.ReceiveList 		      = make(map[int]int64)
 	srvConn.SendList    		      = make(map[int]int64)
 	srvConn.ReceiveDataList    		  = make(map[int64][]byte)
@@ -59,33 +67,45 @@ loop:
 		var reply string
 		var res []byte
 
-		err = websocket.Message.Receive(ws, &reply);	//websocket receive message
+		if server.CloseFlag == true {
+			suc := Close(server)
+			if suc == true {  // graceful colse
+				server.CloseFlag = false
+				server.RejectReqFlag = false // Alread send
+				break
+			}
+		}
+		//If RejectReqFlag is false, then websocket receive message
+		// else no longer accept new requests.
+		if !server.RejectReqFlag {
+			err = websocket.Message.Receive(ws, &reply);
+		}
 		if err == io.EOF {
 			log.Fatalln("=========== EOF ERROR")
 		} else if err != nil {
 			log.Fatalln("Can't receive",err.Error())
 			break
 		}
-		if closeFlag == true {
-			suc := Close(server)
-			if suc == true {  // graceful colse
-				closeFlag = false
-				break
-			}
-			continue
-		}
-		//fmt.Println("received from client: ",reply)
 		if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
-			//nonce := []byte(reply[:8])
-			//fmt.Println("---nonce-", nonce)
+			nonce := []byte(reply[:8])
+			for _, val := range server.NonceList {  // nonce is same, do nothing
+				if bytes.Equal(val, nonce) {
+					panic("Data have been receive")
+				}
+			}
+			server.NonceList[len(server.NonceList)] = nonce
 			reply = reply[8:]
 		}
-		header   :=[]byte(reply[:8])
+		if IsRepeatData(server, []byte(reply[:])) {  // message is same,include txid do nothing
+			continue
+		}
+		header   := []byte(reply[:8])
 		head	 := GetHeader(header)
 		fmt.Println("head: ",head)
 		if err = CheckHeader(head); err != nil {
 			break
 		}
+		DeleteUndealData(server, []byte(reply[:]))  // Reply is to deal
 		switch head.Type {
 			case 'H':
 				// TODO  service, method, ctx, args
@@ -93,7 +113,9 @@ loop:
 			case 'Q': 				//Q
 				i++
 				if i > 3 {
-					closeFlag = true
+					server.CloseFlag = true
+					server.RejectReqFlag = true
+					i = 0
 				}
 				res = DealRequest(server, reply)
 				if res == nil {
@@ -115,6 +137,7 @@ loop:
 					continue
 				}
 			case 'B':               //B
+				server.RejectReqFlag = true
 				flag := GracefulClose(server)
 				if flag {
 					ws.Close()
@@ -126,50 +149,20 @@ loop:
 				log.Fatalln("ERROR")
 			}
 
-/*
-		// deal binary string from client
-		//decode data
-		var v interface{}
-		var data []byte
-		fmt.Println("data is", data)
-		_, err := vbs.Unmarshal(data, &v)
-		if err == nil {
-			fmt.Println("resdata is : ", reflect.TypeOf(v), v)
-		} else {
-			fmt.Println("Error resdata is  %V", err)
-		}
-		//srv := &http.Server{
-		//	ReadTimeout: 30 * time.Second,
-		//	WriteTimeout: 50 * time.Second,
-		//}
-		//if d := srv.ReadTimeout; d != 0 {
-		//	ws.SetReadDeadline(time.Now().Add(d))
-		//}
-		//if d := srv.WriteTimeout; d != 0 {
-		//	ws.SetWriteDeadline(time.Now().Add(d))
-		//}
-*/
-
-		//encode data
- /*
-		vals := v.(map[string]interface{})
-		vals["title"] = "A"
-		fmt.Println("vals is ===: ", vals)
-		buf, err := vbs.Marshal(result)
-		if err != nil {
-			fmt.Println("error encoding %v:", err)
-		}
-		fmt.Printf("Marshal success: ", reflect.TypeOf(buf), buf)
-		for _, x := range buf {
-			results = append(results, x)
-		}
-	*/
 		// The message will send
 		err = websocket.Message.Send(ws, res);
 		if err != nil {
 			fmt.Println("send failed:", err, )
 			break
 		}
+		//flag := server.CloseFlag && (len(server.UnDealReplyList) == 0) && (len(server.ReceiveList) == 0) && (len(server.SendList) == 0)
+		//if flag {
+		//	err = websocket.Message.Send(ws, theByeMessages.sendBye())
+		//	if err != nil {
+		//		fmt.Println("send failed:", err, )
+		//	}
+		//	//break
+		//}
 	}
 }
 
@@ -178,7 +171,7 @@ func main() {
 	http.Handle("/", websocket.Handler(echo))
 	//html layout
 	http.HandleFunc("/web", web)
-	//go func() {log.Fatal("ListenAndServe:", http.ListenAndServe(":8888", nil))} ()
+
 	if err := http.ListenAndServe(":8888", nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}

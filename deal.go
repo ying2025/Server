@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github.com/server/vbs"
-	"github.com/server/srp6a"
-	"github.com/server/eax"
-	"log"
-	"fmt"
 	"bytes"
-	"encoding/hex"
 	"crypto/aes"
+	"encoding/hex"
+	"fmt"
+	"github.com/server/eax"
+	"github.com/server/srp6a"
+	"github.com/server/vbs"
 	"golang.org/x/net/websocket"
+	"log"
 )
 
 const (
@@ -73,6 +73,25 @@ func CheckHeader(header MessageHeader) error {
 		return fmt.Errorf("Unknown message Type(%d)", header.Type)
 	}
 	return  nil
+}
+// Judge whether receive repeate data.
+func IsRepeatData(srvConn *ServerConn, reply []byte) bool{
+	for _, value := range srvConn.UnDealReplyList {
+		if bytes.Equal(value, reply) {
+			return true
+		}
+	}
+	srvConn.UnDealReplyList[len(srvConn.UnDealReplyList)] = reply
+	return false
+}
+// If the data is to deal, delete it from the UndealData List
+func DeleteUndealData(srvConn *ServerConn, reply []byte) {
+	for j, value := range srvConn.UnDealReplyList {
+		if bytes.Equal(value, reply) {
+			delete(srvConn.UnDealReplyList, j)
+			return
+		}
+	}
 }
 // pack the header of XIC protocol 
 func fillHeader(size int,t MsgType) []byte{
@@ -207,21 +226,21 @@ func (q _InQuest) resolveRequest(srvConn *ServerConn, isEnc uint8, reply string)
 	content := decodeInQuest(data)
 	//request param
 	txId := content.txid
-	// judge whether is already receive the data
+	// judge whether is already receive the data expect txid
 	for _, value := range srvConn.ReceiveDataList {
-		if bytes.Equal(data[1:], value){  // Remove txid
+		if bytes.Equal(data[1:], value){
 			errAnswer.status = 1
 			msg := "message is duplication"
-			arg := packExpArg("Receive duplication of data",1000,"218",msg,"resolveRequest*service","Receive")
+			arg := packExpArg("Receive duplication of data",1000,"218",msg,"resolveRequest*service","Receive the same request")
 			errAnswer.args =  arg
 			content.repeatFlag = true
 			return *content, errAnswer
 		}
 	}
-	if txId != 0 {
-		srvConn.ReceiveList[len(srvConn.ReceiveList)] = txId // Receive List
-	}
 	srvConn.ReceiveDataList[txId] = data[1:] // record receive data
+	if txId != 0 {
+		srvConn.ReceiveList[len(srvConn.ReceiveList)] = txId // record receive List
+	}
 	return *content, errAnswer
 }
 // decode Q type message
@@ -581,6 +600,10 @@ func Close(srvConn *ServerConn) bool {
 	var res []byte
 	flag = GracefulClose(srvConn)
 	if flag == true {
+		if len(srvConn.UnDealReplyList) != 0{ // UnDealReplyList is not empty
+		    // deal UnDealRepylList
+			return false
+		}
 		res = theByeMessages.sendBye()
 		err := websocket.Message.Send(srvConn.WsConn, res);
 		if err != nil {
@@ -597,8 +620,7 @@ func Close(srvConn *ServerConn) bool {
 func GracefulClose(srvConn *ServerConn) bool{
 	var res []byte
 	var err error
-
-	for _, value := range srvConn.ReceiveList {
+	for _, value := range srvConn.ReceiveList { // receive list
 		var txId int64 = value
 		data := srvConn.ReceiveDataList[txId]
 		fmt.Println("--Undeal request to send ", data)
@@ -612,7 +634,8 @@ func GracefulClose(srvConn *ServerConn) bool{
 			return false
 		}
 	}
-	for _, value := range srvConn.SendList {
+
+	for _, value := range srvConn.SendList { // send list
 		var txId int64 = value
 		data := srvConn.SendDataList[txId]
 		fmt.Println("Waiting for reply data : ", data)
