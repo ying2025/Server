@@ -627,7 +627,8 @@ func GracefulClose(srvConn *ServerConn) bool{
 		var a answer
 		a = packAnswerBody(txId)
 		res = packAnswer(srvConn, 0x01, txId, a)
-		err = websocket.Message.Send(srvConn.WsConn, res);
+		err = websocket.Message.Send(srvConn.WsConn, res)
+		time.Sleep(5 * time.Second)
 		if err != nil {
 			fmt.Println("send failed:", err, )
 			return false
@@ -637,12 +638,12 @@ func GracefulClose(srvConn *ServerConn) bool{
 	attempTimes := 0
 	for len(srvConn.SendList) != 0 {  // send List
 		done := startTimer(func(now time.Time) {
-			fmt.Println(now)
+			fmt.Println("Waiting for reply that already send" ,now)
 		})
 		time.Sleep(5 * time.Second)
 		close(done)
 		attempTimes++
-		if attempTimes > len(srvConn.SendList) * 2 {
+		if attempTimes > len(srvConn.SendList) || len(srvConn.SendList) == 0{
 			return true   // Force close
 		}
 	}
