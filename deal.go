@@ -634,7 +634,6 @@ func GracefulClose(srvConn *ServerConn) bool{
 			return false
 		}
 	}
-	srvConn.SendList[0] = 1
 	attempTimes := 0
 	for len(srvConn.SendList) != 0 {  // send List
 		done := startTimer(func(now time.Time) {
