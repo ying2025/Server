@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"golang.org/x/net/websocket"
-	"html/template" //支持模板html
+	"html/template"
 	"io"
 	"log"
 	"github.com/server/srp6a"
@@ -67,8 +67,8 @@ loop:
 	for {
 		var reply string
 		var res []byte
-
-		if server.CloseFlag == true { // Active close
+		// Active close. Send Bye to others
+		if server.CloseFlag == true {
 			suc := Close(server)
 			if suc == true {  // graceful colse
 				server.CloseFlag = false
@@ -97,12 +97,13 @@ loop:
 			server.NonceList[len(server.NonceList)] = nonce
 			reply = reply[8:]
 		}
-		if IsRepeatData(server, []byte(reply[:])) {  // message is same,include txid do nothing
+		// message is same,include txid do nothing
+		if IsRepeatData(server, []byte(reply[:])) {
 			continue
 		}
 		header   := []byte(reply[:8])
 		head	 := GetHeader(header)
-		fmt.Println("head: ",head)
+		//fmt.Println("head: ",head)
 		if err = CheckHeader(head); err != nil {
 			break
 		}
@@ -126,7 +127,7 @@ loop:
 				if !isServer {  // client
 					res = UnpackCheck(server, reply)
 				} else { // server
-					res = DealCheck(server, reply)
+					res = DealCheck(server, reply)  // TODO UnTest
 					if res[4] == 0x01 { // encrypt
 						websocket.Message.Send(ws, res);
 						res = HelloMessage.sendHello()
@@ -156,14 +157,6 @@ loop:
 			fmt.Println("send failed:", err, )
 			break
 		}
-		//flag := server.CloseFlag && (len(server.UnDealReplyList) == 0) && (len(server.ReceiveList) == 0) && (len(server.SendList) == 0)
-		//if flag {
-		//	err = websocket.Message.Send(ws, theByeMessages.sendBye())
-		//	if err != nil {
-		//		fmt.Println("send failed:", err, )
-		//	}
-		//	//break
-		//}
 	}
 }
 
@@ -182,7 +175,7 @@ func web(w http.ResponseWriter, r *http.Request) {
 	// print request method
 	fmt.Println("method", r.Method, r.URL)
 	if r.Method == "GET" {  // Show login.html anf transfer it to  front-end
-		t, _ := template.ParseFiles("./index.html")
+		t, _ := template.ParseFiles("./index.html")  // support html template
 		t.Execute(w, nil)
 		fmt.Println("==========:", w)
 	} else { // print the param (username and password) of receiving
