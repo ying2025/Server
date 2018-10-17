@@ -10,6 +10,7 @@ import (
 	"github.com/server/vbs"
 	"golang.org/x/net/websocket"
 	"log"
+	"time"
 )
 
 const (
@@ -632,11 +633,17 @@ func GracefulClose(srvConn *ServerConn) bool{
 			return false
 		}
 	}
-	for len(srvConn.SendList) != 0 {
-		for _, value := range srvConn.SendList { // send list
-			var txId int64 = value
-			data := srvConn.SendDataList[txId]
-			fmt.Println("Waiting for reply data : ", data)
+	srvConn.SendList[0] = 1
+	attempTimes := 0
+	for len(srvConn.SendList) != 0 {  // send List
+		done := startTimer(func(now time.Time) {
+			fmt.Println(now)
+		})
+		time.Sleep(5 * time.Second)
+		close(done)
+		attempTimes++
+		if attempTimes > len(srvConn.SendList) * 2 {
+			return true   // Force close
 		}
 	}
 
@@ -644,6 +651,22 @@ func GracefulClose(srvConn *ServerConn) bool{
 		return true
 	}
 	return false
+}
+// timer
+func startTimer(f func(now time.Time)) chan bool {
+	done := make(chan bool, 1)
+	go func() {
+		t := time.NewTimer(time.Second * 3)
+		defer t.Stop()
+		select {
+		case now := <-t.C:
+			f(now)
+		case <-done:
+			fmt.Println("Waiting for reply data : ")
+			return
+		}
+	}()
+	return done
 }
 
 // delete TxId from receive List
