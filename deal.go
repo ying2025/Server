@@ -632,12 +632,14 @@ func GracefulClose(srvConn *ServerConn) bool{
 			return false
 		}
 	}
-
-	for _, value := range srvConn.SendList { // send list
-		var txId int64 = value
-		data := srvConn.SendDataList[txId]
-		fmt.Println("Waiting for reply data : ", data)
+	for len(srvConn.SendList) != 0 {
+		for _, value := range srvConn.SendList { // send list
+			var txId int64 = value
+			data := srvConn.SendDataList[txId]
+			fmt.Println("Waiting for reply data : ", data)
+		}
 	}
+
 	if len(srvConn.ReceiveList) == 0 && len(srvConn.SendList) == 0 {
 		return true
 	}
