@@ -494,8 +494,6 @@ func  DealCheck(srvConn *ServerConn,reply string) []byte{
 	return c.dealCommand(srvConn, c)
 }
 
-var srv srp6a.Srp6aServer
-
 //Negotiate Secret key
 // Judge the command. If it "SRP6a1"  pack the "SRP6a2" and args, encode them with VBS, then pack header and encode message
 // If it is "SRP6a3" compute M1, compare M1 with the M1 that client transfer .
@@ -536,13 +534,13 @@ func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
 		} else {
 			panic("Cann't find this user!")
 		}
-		srv.NewServer(g, N, BITS, hashName)
+		srvConn.srv.NewServer(g, N, BITS, hashName)
 		//salt := srp6a.GenerateSalt()
 		//saltHex := hex.EncodeToString(salt)
 		//fmt.Println("Salt", saltHex)
 		verifier, _ := hex.DecodeString(verifierHex)
-		srv.SetV(verifier)
-		B := srv.GenerateB()
+		srvConn.srv.SetV(verifier)
+		B := srvConn.srv.GenerateB()
 		BHex := hex.EncodeToString(B)
 		outcheck.cmd = "SRP6a2"
 		args := make(map[string]interface{})
@@ -557,17 +555,17 @@ func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
 		M11 := c.args["M1"].(string)
 		A, _ := hex.DecodeString(A1)
 		M1, _ := hex.DecodeString(M11)
-		srv.SetA(A)
-		srv.ComputeS()
-		M1_mine := srv.ComputeM1()
+		srvConn.srv.SetA(A)
+		srvConn.srv.ComputeS()
+		M1_mine := srvConn.srv.ComputeM1()
 		if bytes.Equal(M1, M1_mine) {
-			M2 := srv.ComputeM2()
+			M2 := srvConn.srv.ComputeM2()
 			outcheck.cmd = "SRP6a4"
 			args := make(map[string]interface{})
 			args["M2"] = M2
 			outcheck.args = args
-			srvConn.Key = srv.ComputeK()
-			srv =  srp6a.Srp6aServer{}
+			srvConn.Key = srvConn.srv.ComputeK()
+			srvConn.srv =  srp6a.Srp6aServer{}
 		} else {
 			err = fmt.Errorf("Srp6a Error, M1 is different!")
 		}
@@ -579,6 +577,7 @@ func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
 		args := make(map[string]interface{})
 		args["reason"] = err
 		outcheck.args = args
+		srvConn.srv =  srp6a.Srp6aServer{}
 	}
 	return packCheckCmd(outcheck.cmd, outcheck.args)
 }
@@ -601,7 +600,6 @@ func Close(srvConn *ServerConn) bool {
 	flag = GracefulClose(srvConn)
 	if flag == true {
 		if len(srvConn.UnDealReplyList) != 0{ // UnDealReplyList is not empty
-		    // deal UnDealRepylList
 			return false
 		}
 		res = theByeMessages.sendBye()

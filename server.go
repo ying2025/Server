@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"golang.org/x/net/websocket"
 	"html/template" //支持模板html
-	"log"
-	"net/http"
-
 	"io"
+	"log"
+	"github.com/server/srp6a"
+	"net/http"
 )
 
 var (
@@ -34,6 +34,7 @@ type Client struct {
 type ServerConn struct {
 	Client
 	WsConn 		*websocket.Conn
+	srv 		srp6a.Srp6aServer
 }
 
 func (srvConn *ServerConn) initServerParam(ws *websocket.Conn){
@@ -61,13 +62,13 @@ func echo(ws *websocket.Conn) {
 	fmt.Println("begin to listen")
 	// Judge whether is server and do reference deal
 	isServer := JudgeIsServer(ws)
-	var i int = 0
+	//var i int = 0
 loop:
 	for {
 		var reply string
 		var res []byte
 
-		if server.CloseFlag == true {
+		if server.CloseFlag == true { // Active close
 			suc := Close(server)
 			if suc == true {  // graceful colse
 				server.CloseFlag = false
@@ -111,12 +112,12 @@ loop:
 				// TODO  service, method, ctx, args
 				res = PackQuest(server, IsEnc)
 			case 'Q': 				//Q
-				i++
-				if i > 3 {
-					server.CloseFlag = true
-					server.RejectReqFlag = true
-					i = 0
-				}
+				//i++
+				//if i > 3 {
+				//	server.CloseFlag = true
+				//	server.RejectReqFlag = true
+				//	i = 0
+				//}
 				res = DealRequest(server, reply)
 				if res == nil {
 					continue
