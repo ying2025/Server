@@ -232,7 +232,7 @@ func (q _InQuest) resolveRequest(srvConn *ServerConn, isEnc uint8, reply string)
 		if bytes.Equal(data[1:], value){
 			errAnswer.status = 1
 			msg := "message is duplication"
-			arg := packExpArg("Receive duplication of data",1000,"218",msg,"resolveRequest*service","Receive the same request")
+			arg := packExpArg("Receive duplication of data",int(txId) + 1000,"218",msg,"resolveRequest*service","Receive the same request")
 			errAnswer.args =  arg
 			content.repeatFlag = true
 			return *content, errAnswer

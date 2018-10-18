@@ -62,7 +62,7 @@ func echo(ws *websocket.Conn) {
 	fmt.Println("begin to listen")
 	// Judge whether is server and do reference deal
 	isServer := JudgeIsServer(ws)
-	var i int = 0
+	//var i int = 0
 loop:
 	for {
 		var reply string
@@ -113,16 +113,18 @@ loop:
 				// TODO  service, method, ctx, args
 				res = PackQuest(server, IsEnc)
 			case 'Q': 				//Q
-				i++
-				if i > 3 {
-					server.CloseFlag = true
-					server.RejectReqFlag = true
-					i = 0
-				}
+				//i++
+				//if i > 3 {
+				//	server.CloseFlag = true
+				//	server.RejectReqFlag = true
+				//	i = 0
+				//}
 				res = DealRequest(server, reply)
 				if res == nil {
 					continue
 				}
+				len := len(res) - 16
+				fmt.Println("Answer: ",res[16:len])
 			case 'C':
 				if !isServer {  // client
 					res = UnpackCheck(server, reply)
