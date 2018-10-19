@@ -646,7 +646,6 @@ func GracefulClose(srvConn *ServerConn) bool{
 			return true   // Force close
 		}
 	}
-
 	if len(srvConn.ReceiveList) == 0 && len(srvConn.SendList) == 0 {
 		return true
 	}

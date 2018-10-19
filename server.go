@@ -15,7 +15,6 @@ var (
 	IsEnc bool 	= 	true
 )
 type Client struct {
-	SendByteFlag    bool    // Whether already rent byte to client
 	RejectReqFlag   bool   // Reject new request
 	CloseFlag		bool   // client is to close
 	Txid			int64
@@ -39,7 +38,6 @@ type ServerConn struct {
 
 func (srvConn *ServerConn) initServerParam(ws *websocket.Conn){
 	srvConn.WsConn 					  = ws
-	srvConn.SendByteFlag			  = false
 	srvConn.CloseFlag				  = false
 	srvConn.RejectReqFlag			  = false
 	srvConn.Txid    	  		  	  = 1
@@ -123,8 +121,6 @@ loop:
 				if res == nil {
 					continue
 				}
-				len := len(res) - 16
-				fmt.Println("Answer: ",res[16:len])
 			case 'C':
 				if !isServer {  // client
 					res = UnpackCheck(server, reply)
