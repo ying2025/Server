@@ -61,14 +61,13 @@ func echo(ws *websocket.Conn) {
 	// Judge whether is server and do reference deal
 	isServer := JudgeIsServer(ws)
 	//var i int = 0
-loop:
+//loop:
 	for {
 		var reply string
 		var res []byte
 		// Active close. Send Bye to others
-		if server.CloseFlag == true {
-			suc := Close(server)
-			if suc == true {  // graceful colse
+		if server.CloseFlag {
+			if suc := Close(server); suc {  // graceful colse
 				server.CloseFlag = false
 				server.RejectReqFlag = false // Alread send
 				break
@@ -80,10 +79,11 @@ loop:
 			err = websocket.Message.Receive(ws, &reply);
 		}
 		if err == io.EOF {
-			log.Fatalln("=========== EOF ERROR")
+			//log.Fatalln("=========== EOF ERROR")
+			panic("=========== Read ERROR: Connection has already broken of")
 		} else if err != nil {
-			log.Fatalln("Can't receive",err.Error())
-			break
+			//log.Fatalln("Can't receive",err.Error())
+			panic(err.Error())
 		}
 		if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
 			nonce := []byte(reply[:8])
@@ -95,10 +95,8 @@ loop:
 			server.NonceList[len(server.NonceList)] = nonce
 			reply = reply[8:]
 		}
-		// message is same,include txid do nothing
-		if IsRepeatData(server, []byte(reply[:])) {
-			continue
-		}
+
+		server.UnDealReplyList[len(server.UnDealReplyList)] = []byte(reply[:])
 		header   := []byte(reply[:8])
 		head	 := GetHeader(header)
 		//fmt.Println("head: ",head)
@@ -138,10 +136,10 @@ loop:
 				}
 			case 'B':               //B
 				server.RejectReqFlag = true
-				flag := GracefulClose(server)
-				if flag {
+				if flag := GracefulClose(server); flag {
 					ws.Close()
-					break loop
+					return
+					//break loop
 				} else {
 					continue
 				}
@@ -164,7 +162,7 @@ func main() {
 	//html layout
 	http.HandleFunc("/web", web)
 
-	if err := http.ListenAndServe(":8888", nil); err != nil {
+	if err := http.ListenAndServe(":8989", nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
 }

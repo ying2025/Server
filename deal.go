@@ -76,15 +76,15 @@ func CheckHeader(header MessageHeader) error {
 	return  nil
 }
 // Judge whether receive repeate data.
-func IsRepeatData(srvConn *ServerConn, reply []byte) bool{
-	for _, value := range srvConn.UnDealReplyList {
-		if bytes.Equal(value, reply) {
-			return true
-		}
-	}
-	srvConn.UnDealReplyList[len(srvConn.UnDealReplyList)] = reply
-	return false
-}
+//func IsRepeatData(srvConn *ServerConn, reply []byte) bool{
+//	for _, value := range srvConn.UnDealReplyList {
+//		if bytes.Equal(value, reply) {
+//			return true
+//		}
+//	}
+//	srvConn.UnDealReplyList[len(srvConn.UnDealReplyList)] = reply
+//	return false
+//}
 // If the data is to deal, delete it from the UndealData List
 func DeleteUndealData(srvConn *ServerConn, reply []byte) {
 	for j, value := range srvConn.UnDealReplyList {
@@ -215,6 +215,7 @@ func  DealRequest(srvConn *ServerConn, reply string) []byte{
 	}
 	var a answer
 	a = packAnswerBody(txId)
+	fmt.Println("deal request ", txId)
 	return packAnswer(srvConn, isEnc, txId, a)
 }
 // resolve Q type message from client
@@ -387,6 +388,7 @@ func packAnswer(srvConn *ServerConn, encFlag uint8,txId int64, a answer) []byte{
 	var result []byte
 	result = packMsg(srvConn, isEnc, size,'A', content.buf)
 	deleteTxId(txId, srvConn.ReceiveList) // delete txId
+	fmt.Println("delete txid ", txId)
 	return result
 }
 // pack expection param
