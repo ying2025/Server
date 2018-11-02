@@ -574,13 +574,16 @@ func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
 		}
 	} else {
 		err = fmt.Errorf("XIC.WARNING", "#=client authentication failed")
+		fmt.Println("Command Error")
 	}
-	if err != nil {
+	if err != nil && bytes.Equal(srvConn.Key, nil) { //SRP6a Error
 		outcheck.cmd = "FORBIDDEN"
 		args := make(map[string]interface{})
 		args["reason"] = err
 		outcheck.args = args
 		srvConn.srv =  srp6a.Srp6aServer{}
+	} else if err != nil { // Expection
+		panic(err)
 	}
 	return packCheckCmd(outcheck.cmd, outcheck.args)
 }

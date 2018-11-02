@@ -61,7 +61,7 @@ func echo(ws *websocket.Conn) {
 	// Judge whether is server and do reference deal
 	isServer := JudgeIsServer(ws)
 	//var i int = 0
-//loop:
+
 	for {
 		var reply string
 		var res []byte
@@ -79,10 +79,8 @@ func echo(ws *websocket.Conn) {
 			err = websocket.Message.Receive(ws, &reply);
 		}
 		if err == io.EOF {
-			//log.Fatalln("=========== EOF ERROR")
 			panic("=========== Read ERROR: Connection has already broken of")
 		} else if err != nil {
-			//log.Fatalln("Can't receive",err.Error())
 			panic(err.Error())
 		}
 		if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
@@ -139,7 +137,6 @@ func echo(ws *websocket.Conn) {
 				if flag := GracefulClose(server); flag {
 					ws.Close()
 					return
-					//break loop
 				} else {
 					continue
 				}
