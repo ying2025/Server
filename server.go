@@ -105,6 +105,9 @@ func echo(ws *websocket.Conn) {
 		switch head.Type {
 			case 'H':
 				// TODO  service, method, ctx, args
+				if bytes.Equal(server.Key, nil) {
+					IsEnc = false
+				}
 				res = PackQuest(server, IsEnc)
 			case 'Q': 				//Q
 				//i++

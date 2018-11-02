@@ -16,10 +16,6 @@ import (
 const (
 	send_add_state int64 = 2
 )
-
-var (
-	_isEnc bool = false
-)
 // Judge the connection whether is Client
 // If it is client connect, return this code is not a server side
 // Or check the encrypt flag. If the flag is true, then pack Authenticate message to client, else send H type to client
@@ -482,9 +478,8 @@ func verifySrp6aM2(srvConn *ServerConn, args map[string]interface{}) []byte{
 	if !bytes.Equal(M2_mine, M2) {
 		panic("srp6a M2 not equal")
 	}
-	cli = srp6a.Srp6aClient{} // clear client
 	srvConn.Key = cli.ComputeK()
-	_isEnc = true
+	cli = srp6a.Srp6aClient{} // clear client
 	return nil
 }
 
