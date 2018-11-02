@@ -181,7 +181,7 @@ func handleCmd(srvConn *ServerConn, c *_InCheck) []byte{
 	switch c.cmd {
 	case "FORBIDDEN":
 		reason := c.args["reason"]
-		fmt.Errorf("Authentication Exception", reason)
+		panic("Authentication Exception, SRP6a Verify fail! The reason is: " + reason.(string))
 	case "AUTHENTICATE":
 		msg = sendSrp6a1(c.args)
 	case "SRP6a2":
@@ -189,7 +189,7 @@ func handleCmd(srvConn *ServerConn, c *_InCheck) []byte{
 	case "SRP6a4":
 		msg = verifySrp6aM2(srvConn, c.args)
 	default:
-		fmt.Errorf("Unknown command type !")
+		panic("Unknown command type, SRP6a Verify fail !")
 	}
 	return msg
 }
@@ -279,7 +279,7 @@ func DealAnswer(srvConn *ServerConn, reply string) []byte {
 
 	a := decodeInAnswer(data)// decode data as array, and the length is 3.
 	if a.status != 0 {
-		fmt.Errorf("Error: ", a.args)
+		panic(a.args)
 	}
 	deleteTxId(a.txid, srvConn.SendList) // delete txId that send from server
 	return nil
@@ -434,7 +434,7 @@ var cli srp6a.Srp6aClient
 func sendSrp6a1(args map[string]interface{}) []byte{
 	method := args["method"]
 	if method != "SRP6a" {
-		fmt.Errorf("Unknown authenticate method", method)
+		panic("Unknown authenticate method: " + method.(string))
 	}
 	identity := "alice"
 	pass := "password123"
@@ -569,7 +569,6 @@ func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
 		}
 	} else {
 		err = fmt.Errorf("XIC.WARNING", "#=client authentication failed")
-		fmt.Println("Command Error")
 	}
 	if err != nil && bytes.Equal(srvConn.Key, nil) { //SRP6a Error
 		outcheck.cmd = "FORBIDDEN"
