@@ -296,11 +296,9 @@ func decodeInAnswer(buf []byte) *_InAnswer {
 	return a
 }
 // pack Q type data
-func PackQuest(srvConn *ServerConn, isEnc bool) []byte{
+func PackQuest(srvConn *ServerConn, isEnc bool, service string, method string, ctx map[string]interface{}, arg map[string]interface{}) []byte{
 	q := &_OutQuest{txid:srvConn.Txid}
-	ctx := make(map[string]interface{})
-	arg := make(map[string]interface{})
-	msg, size := q.encodeOutQuest(q.txid,"service","method",ctx, arg)
+	msg, size := q.encodeOutQuest(q.txid, service, method, ctx, arg)
 	if q.txid != 0 {
 		srvConn.SendList[len(srvConn.SendList)] = q.txid  // record send to server list
 	}
@@ -404,7 +402,7 @@ func encrypt(srvConn *ServerConn, msg []byte) []byte{
 	header, _ := hex.DecodeString(srvConn.HeaderHex)
 
 	out := make([]byte, 256)
-	blockCipher, _ := aes.NewCipher(srvConn.Key)
+	blockCipher, _ := aes.NewCipher(srvConn.CommonKey)
 	ax, _ := eax.NewEax(blockCipher)
 
 	ax.Start(true, nonce, header)
@@ -419,7 +417,7 @@ func decrypt(srvConn *ServerConn, cipherMsg []byte) ([]byte){
 	header, _ := hex.DecodeString(srvConn.HeaderHex)
 
 	out := make([]byte, 256)
-	blockCipher, _ := aes.NewCipher(srvConn.Key)
+	blockCipher, _ := aes.NewCipher(srvConn.CommonKey)
 	ax, _ := eax.NewEax(blockCipher)
 
 	ax.Start(false, nonce, header)
@@ -478,7 +476,7 @@ func verifySrp6aM2(srvConn *ServerConn, args map[string]interface{}) []byte{
 	if !bytes.Equal(M2_mine, M2) {
 		panic("srp6a M2 not equal")
 	}
-	srvConn.Key = cli.ComputeK()
+	srvConn.CommonKey = cli.ComputeK()
 	cli = srp6a.Srp6aClient{} // clear client
 	return nil
 }
@@ -562,7 +560,7 @@ func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
 			args := make(map[string]interface{})
 			args["M2"] = M2
 			outcheck.args = args
-			srvConn.Key = srvConn.srv.ComputeK()
+			srvConn.CommonKey = srvConn.srv.ComputeK()
 			srvConn.srv =  srp6a.Srp6aServer{}
 		} else {
 			err = fmt.Errorf("Srp6a Error, M1 is different!")
@@ -570,7 +568,7 @@ func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
 	} else {
 		err = fmt.Errorf("XIC.WARNING", "#=client authentication failed")
 	}
-	if err != nil && bytes.Equal(srvConn.Key, nil) { //SRP6a Error
+	if err != nil && bytes.Equal(srvConn.CommonKey, nil) { //SRP6a Error
 		outcheck.cmd = "FORBIDDEN"
 		args := make(map[string]interface{})
 		args["reason"] = err
