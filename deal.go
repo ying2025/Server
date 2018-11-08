@@ -302,7 +302,9 @@ func PackQuest(srvConn *ServerConn, isEnc bool, service string, method string, c
 	if q.txid != 0 {
 		srvConn.SendList[len(srvConn.SendList)] = q.txid  // record send to server list
 	}
-	srvConn.SendDataList[q.txid] = msg[1:]
+	fmt.Println("msg", msg)
+	//srvConn.cli.cfg.SendDataList[q.txid] = msg[1:]
+	//srvConn.SendDataList[q.txid] = msg[1:]
 	srvConn.Txid++
 	return packMsg(srvConn, isEnc, size,'Q', msg)
 }
@@ -448,7 +450,7 @@ func sendSrp6a3(args map[string]interface{}) []byte{
 	command := "SRP6a3"
 	hash := args["hash"].(string)
 	NHex := args["N"].(string)
-	g := 	args["g"].(int)
+	g := 	args["g"].(int64)
 	sHex := args["s"].(string)
 	BHex := args["B"].(string)
 	s, _ := hex.DecodeString(sHex)
@@ -518,7 +520,7 @@ func (outcheck *_InCheck) dealCommand(srvConn *ServerConn, c *_InCheck) []byte{
 	vHex := "7E273DE8696FFC4F4E337D05B4B375BEB0DDE1569E8FA00A9886D8129BADA1F1822223CA1A605B530E379BA4729FDC59F105B4787E5186F5C671085A1447B52A48CF1970B4FB6F8400BBF4CEBFBB168152E08AB5EA53D15C1AFF87B2B9DA6E04E058AD51CC72BFC9033B564E26480D78E955A5E29E7AB245DB2BE315E2099AFB"
 	//different hash name have different v
 	//vHex := "400272a61e185e23784e28a16a149dc60a3790fd45856f79a7070c44f7da1ca22f711cd5bc3592171a875c7812472916de2dcfafc22f7dead8f578f1970547936f9eec686bb3df66ff57f724f6b907e83530812b4ffdbf614153e9fbfed4fc6d972da70bb23f6ccd36ad08b72567fe6bcd2bacb713f2cdb9dc8f81f897f489bb393067d66237a3e061902e72096d5ac1cd1d06c1cd648f7e56da5ec6e0094c1b448c5d63ad2addec1e3d9a3aa7118a0410e53434ddbffc60eef5b82548bda5a2f513209484d3221982ca74668a4d37330cc9cfe3b10f0db368293e43026e3a01440ac732bc1cfb983b512d10296f6951ec5e567329af8e58d7c21ea6c778b0bd"
-	g := 2
+	var g int64 = 2
 	idPass := map[string]string {"alice": vHex}
 	const BITS = 1024
 	var err error

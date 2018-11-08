@@ -17,8 +17,6 @@ var (
 	IsEnc bool 	= 	true
 )
 type Config struct {
-	RejectReqFlag   bool   // Reject new request
-	CloseFlag		bool   // client is to close
 	AuthEnc 		bool // authenticated encryption
 	Txid			int64
 	Send_nonce 		int64
@@ -34,14 +32,16 @@ type Config struct {
 }
 
 type ServerConn struct {
-	cli			*Client// as a client
+	RejectReqFlag   bool   // Reject new request
+	CloseFlag		bool   // client is to close
+	cli				*Client// as a client
 	Config
-	PeersNum     int
-	MaxPeers     int // MaxPeers is the maximum number of peers that can be connected
-	WsConn 		*websocket.Conn
-	srv 		srp6a.Srp6aServer
-	//lock		sync.Mutex    // protect running
-	//running     bool
+	PeersNum    	 int
+	MaxPeers     	int // MaxPeers is the maximum number of peers that can be connected
+	WsConn 			*websocket.Conn
+	srv 			srp6a.Srp6aServer
+	//lock			sync.Mutex    // protect running
+	//running    	 bool
 }
 
 func (srvConn *ServerConn) initServerParam(ws *websocket.Conn){
@@ -193,126 +193,6 @@ func web(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func echo(ws *websocket.Conn) {
-	server := &ServerConn{}
-	server.initServerParam(ws)
-	fmt.Println("begin to listen")
-	// Judge whether is server and do reference deal
-	isServer := JudgeIsServer(ws)
-	dealEncMsg(isServer, server, ws)
-}
-func dealEncMsg(isServer bool, server *ServerConn, ws *websocket.Conn) {
-	var err error
-	//var i int = 0
-	for {
-		var reply string
-		var res []byte
-		if isServer {
-			// Active close. Send Bye to others
-			if server.CloseFlag {
-				if suc := Close(server); suc {  // graceful colse
-					server.CloseFlag = false
-					server.RejectReqFlag = false // Alread send
-					break
-				}
-			}
-			//If RejectReqFlag is false, then websocket receive message
-			// else no longer accept new requests.
-			if !server.RejectReqFlag {
-				err = websocket.Message.Receive(ws, &reply);
-			}
-
-		} else {
-			var n int
-			n, err = ws.Read([]byte(reply))
-			fmt.Println("--n--", n)
-		}
-		if err == io.EOF {
-			panic("=========== Read ERROR: Connection has already broken of")
-		} else if err != nil {
-			panic(err.Error())
-		}
-
-		if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
-			nonce := []byte(reply[:8])
-			for _, val := range server.NonceList {  // nonce is same, do nothing
-				if bytes.Equal(val, nonce) {
-					panic("Data have been receive")
-				}
-			}
-			server.NonceList[len(server.NonceList)] = nonce
-			reply = reply[8:]
-		}
-
-		server.UnDealReplyList[len(server.UnDealReplyList)] = []byte(reply[:])
-		header   := []byte(reply[:8])
-		head	 := GetHeader(header)
-		//fmt.Println("head: ",head)
-		if err = CheckHeader(head); err != nil {
-			break
-		}
-		DeleteUndealData(server, []byte(reply[:]))  // Reply is to deal
-		switch head.Type {
-		case 'H':
-			// TODO  service, method, ctx, args
-			if bytes.Equal(server.CommonKey, nil) {
-				IsEnc = false
-			}
-			ctx := make(map[string]interface{})
-			arg := make(map[string]interface{})
-			res = PackQuest(server, IsEnc, "service", "method", ctx, arg)
-		case 'Q': 				//Q
-			//i++
-			//if i > 3 {
-			//	server.CloseFlag = true
-			//	server.RejectReqFlag = true
-			//	i = 0
-			//}
-			res = DealRequest(server, reply)
-			if res == nil {
-				continue
-			}
-		case 'C':
-			if !isServer {  // client
-				res = UnpackCheck(server, reply)
-			} else { // server
-				res = DealCheck(server, reply)  // TODO UnTest
-				if res[4] == 0x01 { // encrypt
-					websocket.Message.Send(ws, res);
-					res = HelloMessage.sendHello()
-				}
-			}
-		case 'A': 				//A
-			res = DealAnswer(server, reply)
-			if res == nil {
-				continue
-			}
-		case 'B':               //B
-			server.RejectReqFlag = true
-			if flag := GracefulClose(server); flag {
-				ws.Close()
-				return
-			} else {
-				continue
-			}
-		default:
-			log.Fatalln("ERROR")
-		}
-
-		// The message will send
-		if isServer {
-			err = websocket.Message.Send(ws, res)
-		} else {
-			_, err = ws.Write(res)
-		}
-
-		if err != nil {
-			fmt.Println("send failed:", err, )
-			break
-		}
-	}
-}
-
 func EchoHandle(ws *websocket.Conn) {
 	var err error
 		server := &ServerConn{}
@@ -433,7 +313,8 @@ func initiatorAsClient() {
 	var res []byte
 
 	origin := "http://127.0.0.1:8989/"
-	ws_url := "ws://192.168.200.40:8989/"
+	// "ws://192.168.200.40:8989/"
+	ws_url := "ws://192.168.32.1:8989/"
 	ws, err := websocket.Dial(ws_url,"",origin)
 	if err != nil {
 		log.Fatal(err)
@@ -442,17 +323,23 @@ func initiatorAsClient() {
 	server.cli = server.cli.DefaultInitPeer(ws)
 	fmt.Println("-----establish connect-------")
 	// If donnot set msg size, it cannot read the data.
-	var msg = make([]byte, 512, 1024 * 8)
+	//var msg = make([]byte, 512, 1024 * 8)
 	for {
-		var n int
-		n, err = ws.Read(msg)
-		if  err != nil {  // receive data
-			log.Fatal(err)
-		} else if (bytes.Equal(msg, nil)) {
-			continue
+		//var n int
+		//n, err = ws.Read(msg)
+		err = websocket.Message.Receive(ws, &reply)
+		if err == io.EOF {
+			panic("=========== Read ERROR: Connection has already broken of")
+		} else if err != nil {
+			panic(err.Error())
 		}
+		//if  err != nil {  // receive data
+		//	log.Fatal(err)
+		//} else if (string.Equal(reply, nil)) {
+		//	continue
+		//}
 		server.cli.AlreadyDeal = false
-		reply = String(msg[:n])
+		//reply = String(msg[:n])
 
 		fmt.Printf("Received All: %s.\n", reply)
 		if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
@@ -462,7 +349,7 @@ func initiatorAsClient() {
 					panic("Data have been receive")
 				}
 			}
-			//server.cli.cfg.NonceList[len(server.cli.cfg.NonceList)] = nonce
+			server.cli.cfg.NonceList[len(server.cli.cfg.NonceList)] = nonce
 			reply = reply[8:]
 		}
 		header   := []byte(reply[:8])
@@ -478,14 +365,10 @@ func initiatorAsClient() {
 			}
 			ctx := make(map[string]interface{})
 			arg := make(map[string]interface{})
+			arg["first"] = "this is the first data client send"
+			arg["second"] = "this is second data "
 			res = PackQuest(server, IsEnc, "service", "method", ctx, arg)
 		case 'Q': 				//Q
-			//i++
-			//if i > 3 {
-			//	server.CloseFlag = true
-			//	server.RejectReqFlag = true
-			//	i = 0
-			//}
 			res = DealRequest(server, reply)
 			if res == nil {
 				continue
@@ -508,9 +391,10 @@ func initiatorAsClient() {
 		default:
 			log.Fatalln("ERROR")
 		}
-		if _, err := ws.Write(res); err != nil {  // send data
+		if err := websocket.Message.Send(ws, res); err != nil {  // send data
 			log.Fatal(err)
 		}
+		fmt.Println("Send data ", res)
 		server.cli.AlreadyDeal = true
 	}
 	

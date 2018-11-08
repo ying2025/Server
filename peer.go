@@ -27,8 +27,15 @@ type Client struct {
 
 func (cli *Client) DefaultInitPeer(ws *websocket.Conn) *Client{
 	conf := new(Config)
-	conf.NonceHex		= "22E7ADD93CFC6393C57EC0B3C17D6B44"
-	conf.HeaderHex		= "126735FCC320D25A"
+	conf.AuthEnc				= false
+	conf.NonceHex				= "22E7ADD93CFC6393C57EC0B3C17D6B44"
+	conf.HeaderHex				= "126735FCC320D25A"
+	conf.NonceList				= make(map[int][]byte)
+	conf.UnDealReplyList 		= make(map[int][]byte)
+	conf.ReceiveList 		    = make(map[int]int64)
+	conf.SendList    		    = make(map[int]int64)
+	conf.ReceiveDataList    	= make(map[int64][]byte)
+	conf.SendDataList			= make(map[int64][]byte)
 	return &Client{
 		cfg: conf,
 		conn: ws,

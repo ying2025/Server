@@ -90,7 +90,7 @@ func (b *_Srp6aBase) setHash(hash string) {
 	}
 }
 
-func (b *_Srp6aBase) setParameter(g int, N []byte, bits int) {
+func (b *_Srp6aBase) setParameter(g int64, N []byte, bits int) {
 	if b.err != nil {
 		return
 	}
@@ -228,7 +228,7 @@ type Srp6aServer struct {
 	iA *big.Int
 }
 
-func (srv *Srp6aServer) NewServer(g int, N []byte, bits int, hash string) *Srp6aServer {
+func (srv *Srp6aServer) NewServer(g int64, N []byte, bits int, hash string) *Srp6aServer {
 	srv.setHash(hash)
 	srv.setParameter(g, N, bits)
 	return srv
@@ -351,7 +351,7 @@ type Srp6aClient struct {
 	_v []byte
 }
 
-func (cli *Srp6aClient) NewClient(g int, N []byte, bits int, hash string) *Srp6aClient {
+func (cli *Srp6aClient) NewClient(g int64, N []byte, bits int, hash string) *Srp6aClient {
 	cli.setHash(hash)
 	cli.setParameter(g, N, bits)
 	return cli
