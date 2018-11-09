@@ -216,6 +216,12 @@ func (b *_Srp6aBase) ComputeK() []byte {
 		b.hasher.Reset()
 		padCopy(buf, b._S); b.hasher.Write(buf)
 		b._K = b.hasher.Sum(nil)
+
+		if len(b._K) < 32 {
+			buf1 := make([]byte, 32)
+			padCopy(buf1, b._K);
+			b._K = buf1
+		}
 	}
 	return b._K
 }
@@ -322,23 +328,23 @@ func (srv *Srp6aServer) ComputeS() []byte {
 	}
 	return srv._S
 }
-func (srv *Srp6aServer) ComputeK() []byte {
-	if len(srv._K) == 0 {
-		// Compute: M2 = SHA1(S)
-		buf := make([]byte, srv.byteLen)
-		srv.hasher.Reset()
-		padCopy(buf, srv._S);
-		srv.hasher.Write(buf)
-		srv._K = srv.hasher.Sum(nil)
-
-		if len(srv._K) < 32 {
-			buf1 := make([]byte, 32)
-			padCopy(buf1, srv._K);
-			srv._K = buf1
-		}
-	}
-	return  srv._K
-}
+//func (srv *Srp6aServer) ComputeK() []byte {
+//	if len(srv._K) == 0 {
+//		// Compute: M2 = SHA1(S)
+//		buf := make([]byte, srv.byteLen)
+//		srv.hasher.Reset()
+//		padCopy(buf, srv._S);
+//		srv.hasher.Write(buf)
+//		srv._K = srv.hasher.Sum(nil)
+//
+//		if len(srv._K) < 32 {
+//			buf1 := make([]byte, 32)
+//			padCopy(buf1, srv._K);
+//			srv._K = buf1
+//		}
+//	}
+//	return  srv._K
+//}
 
 type Srp6aClient struct {
 	_Srp6aBase

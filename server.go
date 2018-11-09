@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"github.com/server/srp6a"
 	"golang.org/x/net/websocket"
 	"html/template"
 	"io"
@@ -16,84 +15,12 @@ import (
 var (
 	IsEnc bool 	= 	true
 )
-type Config struct {
-	AuthEnc 		bool // authenticated encryption
-	Txid			int64
-	Send_nonce 		int64
-	CommonKey 		[]byte
-	NonceHex 		string
-	HeaderHex 		string
-	NonceList       map[int][]byte
-	UnDealReplyList	map[int][]byte
-	ReceiveList 	map[int]int64   //  As a server receive txid list from client
-	SendList		map[int]int64    // As a client active request to server txid list
-	ReceiveDataList map[int64][]byte  //  As a server receive data list which the key is txid from client
-	SendDataList 	map[int64][]byte  // As a client active request to server data list which the key is txid
-}
-
-type ServerConfig struct {
-	RejectReqFlag   bool   // Reject new request
-	CloseFlag		bool   // client is to close
-	PeerCount    	 int
-	MaxPeers     	int // MaxPeers is the maximum number of peers that can be connected
-	srv 			srp6a.Srp6aServer
-	//lock			sync.Mutex    // protect running
-	//running    	 bool
-}
 
 type PeerConn struct {
-	 cli		    *ClientConfig// as a client
+	client		    *ClientConfig// as a client
 	*Config
 	*ServerConfig    // as a server
 	WsConn 			*websocket.Conn
-}
-
-func initConfig() *Config {
-	return &Config {
-		AuthEnc:    		false,
-		NonceHex:   		"22E7ADD93CFC6393C57EC0B3C17D6B44",
-		HeaderHex:  		"126735FCC320D25A",
-		NonceList:   		make(map[int][]byte),
-		UnDealReplyList: 	make(map[int][]byte),
-		ReceiveList: 		make(map[int]int64),
-		SendList: 			make(map[int]int64),
-		ReceiveDataList: 	make(map[int64][]byte),
-		SendDataList: 		make(map[int64][]byte),
-	}
-}
-
-//func (srvConn *PeerConn) initServerParam(ws *websocket.Conn){
-//	srvConn.WsConn 					  = ws
-//	srvConn.CloseFlag				  = false
-//	srvConn.RejectReqFlag			  = false
-//	srvConn.Txid    	  		  	  = 1
-//	srvConn.Send_nonce    	  		  = 1
-//	srvConn.PeerCount				  = 0
-//	srvConn.MaxPeers				  = 10000000
-//	srvConn.NonceHex    		 	  = "22E7ADD93CFC6393C57EC0B3C17D6B44"
-//	srvConn.HeaderHex   		  	  = "126735FCC320D25A"
-//	srvConn.NonceList				  = make(map[int][]byte)
-//	srvConn.UnDealReplyList 		  = make(map[int][]byte)
-//	srvConn.ReceiveList 		      = make(map[int]int64)
-//	srvConn.SendList    		      = make(map[int]int64)
-//	srvConn.ReceiveDataList    		  = make(map[int64][]byte)
-//	srvConn.SendDataList   	  		  = make(map[int64][]byte)
-//	srvConn.srv						  = srp6a.Srp6aServer{}
-//}
-
-func NewServerConfig(ws *websocket.Conn) *PeerConn{
-	cfg := initConfig()
-	return &PeerConn{
-				WsConn: ws,
-				Config: cfg,
-				ServerConfig: &ServerConfig{
-					CloseFlag: false,
-					RejectReqFlag: false,
-					PeerCount: 0,
-					MaxPeers:10000000,
-					srv: srp6a.Srp6aServer{},
-				},
-	}
 }
 
 func web(w http.ResponseWriter, r *http.Request) {
@@ -236,8 +163,7 @@ func initiatorAsClient() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	server := &PeerConn{}
-	server = DefaultInitClient(ws)
+	peer := NewClientConfig(ws)
 	fmt.Println("-----establish connect-------")
 	// If donnot set msg size, it cannot read the data.
 	//var msg = make([]byte, 512, 1024 * 8)
@@ -255,18 +181,18 @@ func initiatorAsClient() {
 		//} else if (string.Equal(reply, nil)) {
 		//	continue
 		//}
-		server.cli.AlreadyDeal = false
+		peer.client.AlreadyDeal = false
 		//reply = String(msg[:n])
 
 		fmt.Printf("Received All: %s.\n", reply)
 		if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
 			nonce := []byte(reply[:8])
-			for _, val := range server.NonceList {  // nonce is same, do nothing
+			for _, val := range peer.NonceList {  // nonce is same, do nothing
 				if bytes.Equal(val, nonce) {
 					panic("Data have been receive")
 				}
 			}
-			server.NonceList[len(server.cli.NonceList)] = nonce
+			peer.NonceList[len(peer.NonceList)] = nonce
 			reply = reply[8:]
 		}
 		header   := []byte(reply[:8])
@@ -277,29 +203,29 @@ func initiatorAsClient() {
 		}
 		switch head.Type {
 		case 'H':
-			if bytes.Equal(server.CommonKey, nil) {
+			if bytes.Equal(peer.CommonKey, nil) {
 				IsEnc = false
 			}
 			ctx := make(map[string]interface{})
 			arg := make(map[string]interface{})
 			arg["first"] = "this is the first data client send"
 			arg["second"] = "this is second data "
-			res = PackQuest(server, IsEnc, "service", "method", ctx, arg)
+			res = PackQuest(peer, IsEnc, "service", "method", ctx, arg)
 		case 'Q': 				//Q
-			res = DealRequest(server, reply)
+			res = DealRequest(peer, reply)
 			if res == nil {
 				continue
 			}
 		case 'C':
-			res = UnpackCheck(server, reply)
+			res = UnpackCheck(peer, reply)
 		case 'A': 				//A
-			res = DealAnswer(server, reply)
+			res = DealAnswer(peer, reply)
 			if res == nil {
 				continue
 			}
 		case 'B':               //B
-			server.RejectReqFlag = true
-			if flag := GracefulClose(server); flag {
+			peer.RejectReqFlag = true
+			if flag := GracefulClose(peer); flag {
 				ws.Close()
 				return
 			} else {
@@ -312,7 +238,7 @@ func initiatorAsClient() {
 			log.Fatal(err)
 		}
 		fmt.Println("Send data ", res)
-		server.cli.AlreadyDeal = true
+		peer.client.AlreadyDeal = true
 	}
 	
 }
@@ -328,22 +254,25 @@ func main() {
 	//} else {
 	//	panic("No know as a server or a client")
 	//}
-
-
-	// receive websocket router addrsess
-	//http.Handle("/", websocket.Handler(echo))
-	//http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	//
-	//})
-	//html layout
-	//http.HandleFunc("/web", web)
-	//
-	//if err := http.ListenAndServe(":8989", nil); err != nil {
-	//	log.Fatal("ListenAndServe:", err)
-	//}
 }
+
+
 
 func  String(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
+
+//func main() {
+// receive websocket router addrsess
+//http.Handle("/", websocket.Handler(echo))
+//http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+//
+//})
+//html layout
+//http.HandleFunc("/web", web)
+//
+//if err := http.ListenAndServe(":8989", nil); err != nil {
+//	log.Fatal("ListenAndServe:", err)
+//}
+//}
 

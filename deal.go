@@ -278,6 +278,7 @@ func DealAnswer(srvConn *PeerConn, reply string) []byte {
 	data := getData(srvConn, isEnc, reply)
 
 	a := decodeInAnswer(data)// decode data as array, and the length is 3.
+	fmt.Println("receive message", a.args)
 	if a.status != 0 {
 		panic(a.args)
 	}
@@ -479,6 +480,7 @@ func verifySrp6aM2(srvConn *PeerConn, args map[string]interface{}) []byte{
 		panic("srp6a M2 not equal")
 	}
 	srvConn.CommonKey = cli.ComputeK()
+	fmt.Println("Key", srvConn.CommonKey)
 	cli = srp6a.Srp6aClient{} // clear client
 	return nil
 }
