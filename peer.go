@@ -262,17 +262,4 @@ func  String(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-//func main() {
-// receive websocket router addrsess
-//http.Handle("/", websocket.Handler(echo))
-//http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-//
-//})
-//html layout
-//http.HandleFunc("/web", web)
-//
-//if err := http.ListenAndServe(":8989", nil); err != nil {
-//	log.Fatal("ListenAndServe:", err)
-//}
-//}
 
