@@ -14,33 +14,17 @@ type ClientConfig struct {
 	ReconnectFlag   bool
 	StopFlag 		bool
 	AlreadyDeal     bool
-}
-
-type Client struct {
-	ClientConfig
-	cfg 				*Config
 	HandshakeTimeout 	time.Duration
 	DialTimeout      	time.Duration
-	conn 				*websocket.Conn
 	client				srp6a.Srp6aClient
 }
 
-func (cli *Client) DefaultInitPeer(ws *websocket.Conn) *Client{
-	conf := new(Config)
-	conf.AuthEnc				= false
-	conf.NonceHex				= "22E7ADD93CFC6393C57EC0B3C17D6B44"
-	conf.HeaderHex				= "126735FCC320D25A"
-	conf.NonceList				= make(map[int][]byte)
-	conf.UnDealReplyList 		= make(map[int][]byte)
-	conf.ReceiveList 		    = make(map[int]int64)
-	conf.SendList    		    = make(map[int]int64)
-	conf.ReceiveDataList    	= make(map[int64][]byte)
-	conf.SendDataList			= make(map[int64][]byte)
-	return &Client{
-		cfg: conf,
-		conn: ws,
-		client: srp6a.Srp6aClient{},
-		ClientConfig: ClientConfig{
+func DefaultInitClient(ws *websocket.Conn) *PeerConn{
+	cfg := initConfig()
+	return &PeerConn{
+		WsConn: ws,
+		Config: cfg,
+		cli: &ClientConfig{
 			AlreadyDeal: false,
 			attempTimes: 0,
 			ReconnectFlag: false,
@@ -48,6 +32,20 @@ func (cli *Client) DefaultInitPeer(ws *websocket.Conn) *Client{
 		},
 	}
 }
+
+
+//func DefaultInitClient(conf *Config) *Client{
+//	return &Client{
+//		Config: conf,
+//		client: srp6a.Srp6aClient{},
+//		ClientConfig: ClientConfig{
+//			AlreadyDeal: false,
+//			attempTimes: 0,
+//			ReconnectFlag: false,
+//			StopFlag: false,
+//		},
+//	}
+//}
 
 //func (cli *Client) InitPeerConfig(ws *websocket.Conn) {
 //	cli.conn              		  = ws

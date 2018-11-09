@@ -31,36 +31,69 @@ type Config struct {
 	SendDataList 	map[int64][]byte  // As a client active request to server data list which the key is txid
 }
 
-type ServerConn struct {
+type ServerConfig struct {
 	RejectReqFlag   bool   // Reject new request
 	CloseFlag		bool   // client is to close
-	cli				*Client// as a client
-	Config
-	PeersNum    	 int
+	PeerCount    	 int
 	MaxPeers     	int // MaxPeers is the maximum number of peers that can be connected
-	WsConn 			*websocket.Conn
 	srv 			srp6a.Srp6aServer
 	//lock			sync.Mutex    // protect running
 	//running    	 bool
 }
 
-func (srvConn *ServerConn) initServerParam(ws *websocket.Conn){
-	srvConn.WsConn 					  = ws
-	srvConn.CloseFlag				  = false
-	srvConn.RejectReqFlag			  = false
-	srvConn.Txid    	  		  	  = 1
-	srvConn.Send_nonce    	  		  = 1
-	srvConn.PeersNum				  = 0
-	srvConn.MaxPeers				  = 10000000
-	srvConn.NonceHex    		 	  = "22E7ADD93CFC6393C57EC0B3C17D6B44"
-	srvConn.HeaderHex   		  	  = "126735FCC320D25A"
-	srvConn.NonceList				  = make(map[int][]byte)
-	srvConn.UnDealReplyList 		  = make(map[int][]byte)
-	srvConn.ReceiveList 		      = make(map[int]int64)
-	srvConn.SendList    		      = make(map[int]int64)
-	srvConn.ReceiveDataList    		  = make(map[int64][]byte)
-	srvConn.SendDataList   	  		  = make(map[int64][]byte)
-	srvConn.srv						  = srp6a.Srp6aServer{}
+type PeerConn struct {
+	 cli		    *ClientConfig// as a client
+	*Config
+	*ServerConfig    // as a server
+	WsConn 			*websocket.Conn
+}
+
+func initConfig() *Config {
+	return &Config {
+		AuthEnc:    		false,
+		NonceHex:   		"22E7ADD93CFC6393C57EC0B3C17D6B44",
+		HeaderHex:  		"126735FCC320D25A",
+		NonceList:   		make(map[int][]byte),
+		UnDealReplyList: 	make(map[int][]byte),
+		ReceiveList: 		make(map[int]int64),
+		SendList: 			make(map[int]int64),
+		ReceiveDataList: 	make(map[int64][]byte),
+		SendDataList: 		make(map[int64][]byte),
+	}
+}
+
+//func (srvConn *PeerConn) initServerParam(ws *websocket.Conn){
+//	srvConn.WsConn 					  = ws
+//	srvConn.CloseFlag				  = false
+//	srvConn.RejectReqFlag			  = false
+//	srvConn.Txid    	  		  	  = 1
+//	srvConn.Send_nonce    	  		  = 1
+//	srvConn.PeerCount				  = 0
+//	srvConn.MaxPeers				  = 10000000
+//	srvConn.NonceHex    		 	  = "22E7ADD93CFC6393C57EC0B3C17D6B44"
+//	srvConn.HeaderHex   		  	  = "126735FCC320D25A"
+//	srvConn.NonceList				  = make(map[int][]byte)
+//	srvConn.UnDealReplyList 		  = make(map[int][]byte)
+//	srvConn.ReceiveList 		      = make(map[int]int64)
+//	srvConn.SendList    		      = make(map[int]int64)
+//	srvConn.ReceiveDataList    		  = make(map[int64][]byte)
+//	srvConn.SendDataList   	  		  = make(map[int64][]byte)
+//	srvConn.srv						  = srp6a.Srp6aServer{}
+//}
+
+func NewServerConfig(ws *websocket.Conn) *PeerConn{
+	cfg := initConfig()
+	return &PeerConn{
+				WsConn: ws,
+				Config: cfg,
+				ServerConfig: &ServerConfig{
+					CloseFlag: false,
+					RejectReqFlag: false,
+					PeerCount: 0,
+					MaxPeers:10000000,
+					srv: srp6a.Srp6aServer{},
+				},
+	}
 }
 
 func web(w http.ResponseWriter, r *http.Request) {
@@ -77,9 +110,9 @@ func web(w http.ResponseWriter, r *http.Request) {
 }
 
 func EchoHandle(ws *websocket.Conn) {
-	var err error
-		server := &ServerConn{}
-		server.initServerParam(ws)
+		var err error
+		server := NewServerConfig(ws)
+		server.PeerCount++
 		fmt.Println("begin to listen")
 		// Judge whether is server and do reference deal
 		isServer := JudgeIsServer(ws)
@@ -89,13 +122,14 @@ func EchoHandle(ws *websocket.Conn) {
 			var reply string
 			var res []byte
 			// Active close. Send Bye to others
-			if server.CloseFlag {
-				if suc := Close(server); suc {  // graceful colse
-					server.CloseFlag = false
-					server.RejectReqFlag = false // Alread send
-					break
-				}
-			}
+			//if server.CloseFlag {
+			//	if suc := Close(server); suc {  // graceful colse
+			//		server.CloseFlag = false
+			//		server.RejectReqFlag = false // Alread send
+			//		server.PeerCount--
+			//		break
+			//	}
+			//}
 			//If RejectReqFlag is false, then websocket receive message
 			// else no longer accept new requests.
 			if !server.RejectReqFlag {
@@ -116,7 +150,6 @@ func EchoHandle(ws *websocket.Conn) {
 				server.NonceList[len(server.NonceList)] = nonce
 				reply = reply[8:]
 			}
-
 			server.UnDealReplyList[len(server.UnDealReplyList)] = []byte(reply[:])
 			header   := []byte(reply[:8])
 			head	 := GetHeader(header)
@@ -136,7 +169,7 @@ func EchoHandle(ws *websocket.Conn) {
 					res = PackQuest(server, IsEnc, "service", "method", ctx, arg)
 				case 'Q': 				//Q
 					//i++
-					//if i > 3 {
+					//if i > 2 {
 					//	server.CloseFlag = true
 					//	server.RejectReqFlag = true
 					//	i = 0
@@ -164,6 +197,7 @@ func EchoHandle(ws *websocket.Conn) {
 					server.RejectReqFlag = true
 					if flag := GracefulClose(server); flag {
 						ws.Close()
+						server.PeerCount--
 						return
 					} else {
 						continue
@@ -197,13 +231,13 @@ func initiatorAsClient() {
 
 	origin := "http://127.0.0.1:8989/"
 	// "ws://192.168.200.40:8989/"
-	ws_url := "ws://192.168.32.1:8989/"
+	ws_url := "ws://192.168.200.40:8989/"
 	ws, err := websocket.Dial(ws_url,"",origin)
 	if err != nil {
 		log.Fatal(err)
 	}
-	server := &ServerConn{}
-	server.cli = server.cli.DefaultInitPeer(ws)
+	server := &PeerConn{}
+	server = DefaultInitClient(ws)
 	fmt.Println("-----establish connect-------")
 	// If donnot set msg size, it cannot read the data.
 	//var msg = make([]byte, 512, 1024 * 8)
@@ -227,12 +261,12 @@ func initiatorAsClient() {
 		fmt.Printf("Received All: %s.\n", reply)
 		if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
 			nonce := []byte(reply[:8])
-			for _, val := range server.cli.cfg.NonceList {  // nonce is same, do nothing
+			for _, val := range server.NonceList {  // nonce is same, do nothing
 				if bytes.Equal(val, nonce) {
 					panic("Data have been receive")
 				}
 			}
-			server.cli.cfg.NonceList[len(server.cli.cfg.NonceList)] = nonce
+			server.NonceList[len(server.cli.NonceList)] = nonce
 			reply = reply[8:]
 		}
 		header   := []byte(reply[:8])
@@ -243,7 +277,7 @@ func initiatorAsClient() {
 		}
 		switch head.Type {
 		case 'H':
-			if bytes.Equal(server.cli.cfg.CommonKey, nil) {
+			if bytes.Equal(server.CommonKey, nil) {
 				IsEnc = false
 			}
 			ctx := make(map[string]interface{})
