@@ -164,27 +164,16 @@ func initiatorAsClient() {
 		log.Fatal(err)
 	}
 	peer := NewClientConfig(ws)
-	fmt.Println("-----establish connect-------")
 	// If donnot set msg size, it cannot read the data.
-	//var msg = make([]byte, 512, 1024 * 8)
 	for {
-		//var n int
-		//n, err = ws.Read(msg)
 		err = websocket.Message.Receive(ws, &reply)
 		if err == io.EOF {
 			panic("=========== Read ERROR: Connection has already broken of")
 		} else if err != nil {
 			panic(err.Error())
 		}
-		//if  err != nil {  // receive data
-		//	log.Fatal(err)
-		//} else if (string.Equal(reply, nil)) {
-		//	continue
-		//}
-		peer.client.AlreadyDeal = false
-		//reply = String(msg[:n])
 
-		fmt.Printf("Received All: %s.\n", reply)
+		peer.client.AlreadyDeal = false
 		if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
 			nonce := []byte(reply[:8])
 			for _, val := range peer.NonceList {  // nonce is same, do nothing
