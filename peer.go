@@ -270,8 +270,6 @@ func clientReply(peer *PeerConn) {
 }
 
 func startClientMode() {
-	//var receiveData string
-	//var reply []byte
 
 	origin := "http://127.0.0.1:8989/"
 	// "ws://192.168.200.40:8989/"
@@ -281,76 +279,9 @@ func startClientMode() {
 		log.Fatal(err)
 	}
 	peer := NewClientConfig(ws)
-	//////////////////////////////////////////////////
+
 	go clientReceive(peer)
 	clientReply(peer)
-	/////////////////////////////////////////////////
-	// If donnot set msg size, it cannot read the data.
-	//for {
-	//	err = websocket.Message.Receive(ws, &receiveData)
-	//	if err == io.EOF {
-	//		panic("=========== Read ERROR: Connection has already broken of")
-	//	} else if err != nil {
-	//		panic(err.Error())
-	//	}
-	//
-	//	peer.client.AlreadyDeal = false
-	//	if  (len(receiveData) > 16) && (receiveData[8] == 0x58) && (receiveData[11] == 0x01) { // encrypt
-	//		nonce := []byte(receiveData[:8])
-	//		for _, val := range peer.NonceList {  // nonce is same, do nothing
-	//			if bytes.Equal(val, nonce) {
-	//				panic("Data have been receive")
-	//			}
-	//		}
-	//		peer.NonceList[len(peer.NonceList)] = nonce
-	//		receiveData = receiveData[8:]
-	//	}
-	//	header   := []byte(receiveData[:8])
-	//	head	 := GetHeader(header)
-	//	//fmt.Println("head: ",head)
-	//	if err = CheckHeader(head); err != nil {
-	//		break
-	//	}
-	//	switch head.Type {
-	//	case 'H':
-	//		if bytes.Equal(peer.CommonKey, nil) {
-	//			EncFlag = false
-	//		}
-	//		ctx := make(map[string]interface{})
-	//		arg := make(map[string]interface{})
-	//		arg["first"] = "this is the first data client send"
-	//		arg["second"] = "this is second data "
-	//		reply = PackQuest(peer, EncFlag, "service", "method", ctx, arg)
-	//	case 'Q': 				//Q
-	//		reply = DealRequest(peer, receiveData)
-	//		if reply == nil {
-	//			continue
-	//		}
-	//	case 'C':
-	//		reply = UnpackCheck(peer, receiveData)
-	//	case 'A': 				//A
-	//		reply = DealAnswer(peer, receiveData)
-	//		if reply == nil {
-	//			continue
-	//		}
-	//	case 'B':               //B
-	//		peer.RejectReqFlag = true
-	//		if flag := GracefulClose(peer); flag {
-	//			ws.Close()
-	//			return
-	//		} else {
-	//			continue
-	//		}
-	//	default:
-	//		log.Fatalln("ERROR")
-	//	}
-	//	if err := websocket.Message.Send(ws, reply); err != nil {  // send data
-	//		log.Fatal(err)
-	//	}
-	//	fmt.Println("Send data ", reply)
-	//	peer.client.AlreadyDeal = true
-	//}
-	
 }
 
 func main() {
