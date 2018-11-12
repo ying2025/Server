@@ -1,11 +1,11 @@
 package srp6a
 
 import (
-	"bytes"
-	"encoding/hex"
-	"fmt"
-	"math/rand"
 	"testing"
+	"fmt"
+	"bytes"
+	"math/rand"
+	"encoding/hex"
 )
 
 func getRandomBytes(buf []byte) {
@@ -64,100 +64,63 @@ func TestSrp6a(t *testing.T) {
 	}
 }
 
-func Test4(t *testing.T) {
-	serverChan := make(chan chan string, 1)
-	clientChan := make(chan string, 1)
-	serverChan <- clientChan
+func BenchmarkSrp6a(b *testing.B) {
+        hexN := "ac6bdb41324a9a9bf166de5e1389582faf72b6651987ee07fc3192943db56050" +
+		"a37329cbb4a099ed8193e0757767a13dd52312ab4b03310dcd7f48a9da04fd50" +
+		"e8083969edb767b0cf6095179a163ab3661a05fbd5faaae82918a9962f0b93b8" +
+		"55f97993ec975eeaa80d740adbf4ff747359d041d5c33ea71d281e446b14773b" +
+		"ca97b43a23fb801676bd207a436c6481f1d2b9078717461a5b9d32e688f87748" +
+		"544523b524b0d57d5ea77a2775d2ecfa032cfbdbf52fb3786160279004e57ae6" +
+		"af874e7303ce53299ccc041c7bc308d82a5698f3a8d0c38271ae35f8e9dbfbb6" +
+		"94b5c803d89f7ae435de236d525f54759b65e372fcd68ef20fa7111f9e4aff73"
+	N, _ := hex.DecodeString(hexN)
 
-	go func(serverChan chan chan string) {
-		client := <-serverChan
-		client <- "Hello, World!"
-	}(serverChan)
-	fmt.Println(<-clientChan)
-	close(serverChan)
-	close(clientChan)
-}
-func fibonacci(c, quit chan int) {
-	x, y := 0, 1
-	for {
-		select {
-			case c <- x:
-				x, y = y, x+y
-			case <-quit:
-				fmt.Println("quit")
-				return
-			}
+	id := make([]byte, 16)
+	pass := make([]byte, 16)
+
+	const BITS = 2048
+	for i := 0; i < b.N; i++ {
+
+		RandomBytes(id)
+		RandomBytes(pass)
+
+		salt := GenerateSalt()
+
+		var srv Srp6aServer
+		var cli Srp6aClient
+		srv.SetHash("SHA256")
+		srv.SetParameter(2, N, BITS)
+
+		cli.SetHash("SHA256")
+		cli.SetParameter(2, N, BITS)
+
+		cli.SetIdentity(string(id), string(pass))
+		cli.SetSalt(salt)
+
+		v := cli.ComputeV()
+		srv.SetV(v)
+		A := cli.GenerateA()
+		srv.SetA(A)
+
+		B := srv.GenerateB()
+		cli.SetB(B)
+
+		S1 := cli.ComputeS()
+		S2 := srv.ComputeS()
+
+		if err := srv.Err(); err != nil {
+			b.Fatalf("srv error: %v", err)
+		}
+
+		if err := cli.Err(); err != nil {
+			b.Fatalf("cli error: %v", err)
+		}
+
+		if !bytes.Equal(S1, S2) {
+			fmt.Println("S1", hex.EncodeToString(S1))
+			fmt.Println("S2", hex.EncodeToString(S2))
+			b.Fatalf("S1 and S2 differ")
+		}
 	}
 }
-func Test2(t *testing.T) {
-	c := make(chan int)
-	quit := make(chan int)
-	go func() {
-		for i := 0; i < 10; i++ {
-			fmt.Println(<-c)
-		}
-		quit <- 0
-	}()
-	fibonacci(c, quit)
-}
-
-//func BenchmarkSrp6a(b *testing.B) {
-//        hexN := "ac6bdb41324a9a9bf166de5e1389582faf72b6651987ee07fc3192943db56050" +
-//		"a37329cbb4a099ed8193e0757767a13dd52312ab4b03310dcd7f48a9da04fd50" +
-//		"e8083969edb767b0cf6095179a163ab3661a05fbd5faaae82918a9962f0b93b8" +
-//		"55f97993ec975eeaa80d740adbf4ff747359d041d5c33ea71d281e446b14773b" +
-//		"ca97b43a23fb801676bd207a436c6481f1d2b9078717461a5b9d32e688f87748" +
-//		"544523b524b0d57d5ea77a2775d2ecfa032cfbdbf52fb3786160279004e57ae6" +
-//		"af874e7303ce53299ccc041c7bc308d82a5698f3a8d0c38271ae35f8e9dbfbb6" +
-//		"94b5c803d89f7ae435de236d525f54759b65e372fcd68ef20fa7111f9e4aff73"
-//	N, _ := hex.DecodeString(hexN)
-//
-//	id := make([]byte, 16)
-//	pass := make([]byte, 16)
-//
-//	const BITS = 2048
-//	for i := 0; i < b.N; i++ {
-//
-//		RandomBytes(id)
-//		RandomBytes(pass)
-//
-//		salt := GenerateSalt()
-//
-//		var srv Srp6aServer
-//		var cli Srp6aClient
-//		srv.SetHash("SHA256")
-//		srv.SetParameter(2, N, BITS)
-//
-//		cli.SetHash("SHA256")
-//		cli.SetParameter(2, N, BITS)
-//
-//		cli.SetIdentity(string(id), string(pass))
-//		cli.SetSalt(salt)
-//
-//		v := cli.ComputeV()
-//		srv.SetV(v)
-//		A := cli.GenerateA()
-//		srv.SetA(A)
-//
-//		B := srv.GenerateB()
-//		cli.SetB(B)
-//
-//		S1 := cli.ComputeS()
-//		S2 := srv.ComputeS()
-//
-//		if err := srv.Err(); err != nil {
-//			b.Fatalf("srv error: %v", err)
-//		}
-//
-//		if err := cli.Err(); err != nil {
-//			b.Fatalf("cli error: %v", err)
-//		}
-//
-//		if !bytes.Equal(S1, S2) {
-//			fmt.Println("S1", hex.EncodeToString(S1))
-//			fmt.Println("S2", hex.EncodeToString(S2))
-//			b.Fatalf("S1 and S2 differ")
-//		}
-//	}
-//}
 
