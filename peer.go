@@ -294,19 +294,6 @@ func main() {
 	}
 }
 
-//func main() {
-//	fmt.Println("os.Args[1]", os.Args)
-//	//startClientMode()
-//	//if len(os.Args) == 2 && strings.ToLower(os.Args[1]) == "server" {
-//		startServerMode()
-//	//} else if len(os.Args) == 2 && strings.ToLower(os.Args[1]) == "client" {
-//	//	startClientMode()
-//	//} else {
-//	//	panic("No know as a server or a client")
-//	//}
-//}
-
-
 func  String(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
