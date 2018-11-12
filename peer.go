@@ -9,12 +9,10 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sync"
+	"time"
 	"unsafe"
 	"strings"
-)
-
-var (
-	IsEnc bool 	= 	true
 )
 
 type PeerConn struct {
@@ -43,12 +41,12 @@ func EchoHandle(ws *websocket.Conn) {
 		server.PeerCount++
 		fmt.Println("begin to listen")
 		// Judge whether is server and do reference deal
-		isServer := JudgeIsServer(ws)
+		isServer := JudgeIsServer(server)
 		//var i int = 0
 
 		for {
-			var reply string
-			var res []byte
+			var receiveData string
+			var reply []byte
 			// Active close. Send Bye to others
 			//if server.CloseFlag {
 			//	if suc := Close(server); suc {  // graceful colse
@@ -61,40 +59,40 @@ func EchoHandle(ws *websocket.Conn) {
 			//If RejectReqFlag is false, then websocket receive message
 			// else no longer accept new requests.
 			if !server.RejectReqFlag {
-				err = websocket.Message.Receive(ws, &reply);
+				err = websocket.Message.Receive(ws, &receiveData);
 			}
 			if err == io.EOF {
 				panic("=========== Read ERROR: Connection has already broken of")
 			} else if err != nil {
 				panic(err.Error())
 			}
-			if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
-				nonce := []byte(reply[:8])
+			if  (len(receiveData) > 16) && (receiveData[8] == 0x58) && (receiveData[11] == 0x01) { // encrypt
+				nonce := []byte(receiveData[:8])
 				for _, val := range server.NonceList {  // nonce is same, do nothing
 					if bytes.Equal(val, nonce) {
 						panic("Data have been receive")
 					}
 				}
 				server.NonceList[len(server.NonceList)] = nonce
-				reply = reply[8:]
+				receiveData = receiveData[8:]
 			}
-			server.UnDealReplyList[len(server.UnDealReplyList)] = []byte(reply[:])
-			header   := []byte(reply[:8])
+			server.UnDealReplyList[len(server.UnDealReplyList)] = []byte(receiveData[:])
+			header   := []byte(receiveData[:8])
 			head	 := GetHeader(header)
 			//fmt.Println("head: ",head)
 			if err = CheckHeader(head); err != nil {
 				break
 			}
-			DeleteUndealData(server, []byte(reply[:]))  // Reply is to deal
+			DeleteUndealData(server, []byte(receiveData[:]))  // Reply is to deal
 			switch head.Type {
 				case 'H':
 					// TODO  service, method, ctx, args
 					if bytes.Equal(server.CommonKey, nil) {
-						IsEnc = false
+						server.EncFlag = false
 					}
 					ctx := make(map[string]interface{})
 					arg := make(map[string]interface{})
-					res = PackQuest(server, IsEnc, "service", "method", ctx, arg)
+					reply = PackQuest(server, server.EncFlag, "service", "method", ctx, arg)
 				case 'Q': 				//Q
 					//i++
 					//if i > 2 {
@@ -102,23 +100,23 @@ func EchoHandle(ws *websocket.Conn) {
 					//	server.RejectReqFlag = true
 					//	i = 0
 					//}
-					res = DealRequest(server, reply)
-					if res == nil {
+					reply = DealRequest(server, receiveData)
+					if reply == nil {
 						continue
 					}
 				case 'C':
 					if !isServer {  // client
-						res = UnpackCheck(server, reply)
+						reply = UnpackCheck(server, receiveData)
 					} else { // server
-						res = DealCheck(server, reply)  // TODO UnTest
-						if res[4] == 0x01 { // encrypt
-							websocket.Message.Send(ws, res);
-							res = HelloMessage.sendHello()
+						reply = DealCheck(server, receiveData)  // TODO UnTest
+						if reply[4] == 0x01 { // encrypt
+							websocket.Message.Send(ws, reply);
+							reply = HelloMessage.sendHello()
 						}
 					}
 				case 'A': 				//A
-					res = DealAnswer(server, reply)
-					if res == nil {
+					reply = DealAnswer(server, receiveData)
+					if reply == nil {
 						continue
 					}
 				case 'B':               //B
@@ -135,17 +133,155 @@ func EchoHandle(ws *websocket.Conn) {
 				}
 
 			// The message will send
-			err = websocket.Message.Send(ws, res);
+			err = websocket.Message.Send(ws, reply);
 			if err != nil {
 				fmt.Println("send failed:", err, )
 				break
 			}
 		}
 }
+var wg sync.WaitGroup
+func serverReceive(server *PeerConn) {
+	defer wg.Done()
+
+	var err error
+	server.PeerCount++
+	fmt.Println("begin to listen")
+	// Judge whether is server and do reference deal
+	isServer := JudgeIsServer(server)
+	var i int = 1
+	for {
+		var receiveData string
+		var reply []byte
+		// Active close. Send Bye to others
+		//if server.CloseFlag {
+		//	if suc := Close(server); suc {  // graceful colse
+		//		server.CloseFlag = false
+		//		server.RejectReqFlag = false // Alread send
+		//		server.PeerCount--
+		//		break
+		//	}
+		//}
+		//If RejectReqFlag is false, then websocket receive message
+		// else no longer accept new requests.
+		if !server.RejectReqFlag {
+			err = websocket.Message.Receive(server.WsConn, &receiveData);
+		}
+
+		if err == io.EOF {
+			panic("=========== Read ERROR: Connection has already broken of")
+		} else if err != nil {
+			panic(err.Error())
+		}
+		if  (len(receiveData) > 16) && (receiveData[8] == 0x58) && (receiveData[11] == 0x01) { // encrypt
+			nonce := []byte(receiveData[:8])
+			for _, val := range server.NonceList {  // nonce is same, do nothing
+				if bytes.Equal(val, nonce) {
+					panic("Data have been receive")
+				}
+			}
+			server.NonceList[len(server.NonceList)] = nonce
+			receiveData = receiveData[8:]
+		}
+		server.UnDealReplyList[len(server.UnDealReplyList)] = []byte(receiveData[:])
+		header   := []byte(receiveData[:8])
+		head	 := GetHeader(header)
+		//fmt.Println("head: ",head)
+		if err = CheckHeader(head); err != nil {
+			break
+		}
+		DeleteUndealData(server, []byte(receiveData[:]))  // Reply is to deal
+		switch head.Type {
+		case 'H':
+			// TODO  service, method, ctx, args
+			if bytes.Equal(server.CommonKey, nil) {
+				server.EncFlag = false
+			}
+			ctx := make(map[string]interface{})
+			arg := make(map[string]interface{})
+			reply = PackQuest(server, server.EncFlag, "service", "method", ctx, arg)
+		case 'Q': 				//Q
+			//if i > 2 {
+			//	server.CloseFlag = true
+			//	server.RejectReqFlag = true
+			//	i = 0
+			//}
+			i++
+			reply = DealRequest(server, receiveData)
+			if reply == nil {
+				continue
+			}
+		case 'C':
+			if !isServer {  // client
+				reply = UnpackCheck(server, receiveData)
+			} else { // server
+				reply = DealCheck(server, receiveData)  // TODO UnTest
+				if reply[4] == 0x01 { // encrypt
+					server.SendChan <- reply
+					reply = HelloMessage.sendHello()
+				}
+			}
+		case 'A': 				//A
+			reply = DealAnswer(server, receiveData)
+			if reply == nil {
+				continue
+			}
+		case 'B':               //B
+			server.RejectReqFlag = true
+			if flag := GracefulClose(server); flag {
+				server.WsConn.Close()
+				server.PeerCount--
+				return
+			} else {
+				continue
+			}
+		default:
+			log.Fatalln("ERROR")
+		}
+		server.SendChan <- reply  // send the reply to send channel
+	}
+}
+
+func serverReply(peer *PeerConn) {
+	for {
+		select {
+		case message, ok := <-peer.SendChan:
+			if !ok {
+				panic("The data is already to send !")
+			}
+			if err := websocket.Message.Send(peer.WsConn, message); err != nil {  // send data
+				log.Fatal(err)
+			}
+			fmt.Println("Server send data ", message)
+		}
+	}
+}
 
 func Listen(ws *websocket.Conn) {
 	//go EchoHandle(ws)
-	EchoHandle(ws)
+	server := NewServerConfig(ws)
+	wg.Add(1)
+	go serverReceive(server)
+	serverReply(server)
+	res := WaitTimeout(&wg, 1 * time.Second)
+	if res {
+		fmt.Println("执行完成退出")
+	} else {
+		fmt.Println("执行超时")
+	}
+}
+func WaitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
+	ch := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+	select {
+	case <-ch:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
 }
 
 func startServerMode() {
@@ -159,10 +295,10 @@ func startServerMode() {
 
 func clientReceive(peer *PeerConn) {
 	var err error
-	var reply string
-	var res []byte
+	var receiveData  string
+	var reply []byte
 	for {
-		err = websocket.Message.Receive(peer.WsConn, &reply)
+		err = websocket.Message.Receive(peer.WsConn, &receiveData)
 		if err == io.EOF {
 			panic("=========== Read ERROR: Connection has already broken of")
 		} else if err != nil {
@@ -170,17 +306,17 @@ func clientReceive(peer *PeerConn) {
 		}
 
 		peer.client.AlreadyDeal = false
-		if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
-			nonce := []byte(reply[:8])
+		if  (len(receiveData) > 16) && (receiveData[8] == 0x58) && (receiveData[11] == 0x01) { // encrypt
+			nonce := []byte(receiveData[:8])
 			for _, val := range peer.NonceList {  // nonce is same, do nothing
 				if bytes.Equal(val, nonce) {
 					panic("Data have been receive")
 				}
 			}
 			peer.NonceList[len(peer.NonceList)] = nonce
-			reply = reply[8:]
+			receiveData = receiveData[8:]
 		}
-		header   := []byte(reply[:8])
+		header   := []byte(receiveData[:8])
 		head	 := GetHeader(header)
 		//fmt.Println("head: ",head)
 		if err = CheckHeader(head); err != nil {
@@ -189,23 +325,23 @@ func clientReceive(peer *PeerConn) {
 		switch head.Type {
 		case 'H':
 			if bytes.Equal(peer.CommonKey, nil) {
-				IsEnc = false
+				peer.EncFlag = false
 			}
 			ctx := make(map[string]interface{})
 			arg := make(map[string]interface{})
 			arg["first"] = "this is the first data client send"
 			arg["second"] = "this is second data "
-			res = PackQuest(peer, IsEnc, "service", "method", ctx, arg)
+			reply = PackQuest(peer, peer.EncFlag, "service", "method", ctx, arg)
 		case 'Q': 				//Q
-			res = DealRequest(peer, reply)
-			if res == nil {
+			reply = DealRequest(peer, receiveData)
+			if reply == nil {
 				continue
 			}
 		case 'C':
-			res = UnpackCheck(peer, reply)
+			reply = UnpackCheck(peer, receiveData)
 		case 'A': 				//A
-			res = DealAnswer(peer, reply)
-			if res == nil {
+			reply = DealAnswer(peer, receiveData)
+			if reply == nil {
 				continue
 			}
 		case 'B':               //B
@@ -219,7 +355,7 @@ func clientReceive(peer *PeerConn) {
 		default:
 			log.Fatalln("ERROR")
 		}
-		peer.SendChan <- res
+		peer.SendChan <- reply
 		peer.client.AlreadyDeal = true
 	}
 }
@@ -239,8 +375,8 @@ func clientReply(peer *PeerConn) {
 }
 
 func startClientMode() {
-	//var reply string
-	//var res []byte
+	//var receiveData string
+	//var reply []byte
 
 	origin := "http://127.0.0.1:8989/"
 	// "ws://192.168.200.40:8989/"
@@ -252,12 +388,11 @@ func startClientMode() {
 	peer := NewClientConfig(ws)
 	//////////////////////////////////////////////////
 	go clientReceive(peer)
-	go clientReply(peer)
-
+	clientReply(peer)
 	/////////////////////////////////////////////////
 	// If donnot set msg size, it cannot read the data.
 	//for {
-	//	err = websocket.Message.Receive(ws, &reply)
+	//	err = websocket.Message.Receive(ws, &receiveData)
 	//	if err == io.EOF {
 	//		panic("=========== Read ERROR: Connection has already broken of")
 	//	} else if err != nil {
@@ -265,17 +400,17 @@ func startClientMode() {
 	//	}
 	//
 	//	peer.client.AlreadyDeal = false
-	//	if  (len(reply) > 16) && (reply[8] == 0x58) && (reply[11] == 0x01) { // encrypt
-	//		nonce := []byte(reply[:8])
+	//	if  (len(receiveData) > 16) && (receiveData[8] == 0x58) && (receiveData[11] == 0x01) { // encrypt
+	//		nonce := []byte(receiveData[:8])
 	//		for _, val := range peer.NonceList {  // nonce is same, do nothing
 	//			if bytes.Equal(val, nonce) {
 	//				panic("Data have been receive")
 	//			}
 	//		}
 	//		peer.NonceList[len(peer.NonceList)] = nonce
-	//		reply = reply[8:]
+	//		receiveData = receiveData[8:]
 	//	}
-	//	header   := []byte(reply[:8])
+	//	header   := []byte(receiveData[:8])
 	//	head	 := GetHeader(header)
 	//	//fmt.Println("head: ",head)
 	//	if err = CheckHeader(head); err != nil {
@@ -284,23 +419,23 @@ func startClientMode() {
 	//	switch head.Type {
 	//	case 'H':
 	//		if bytes.Equal(peer.CommonKey, nil) {
-	//			IsEnc = false
+	//			EncFlag = false
 	//		}
 	//		ctx := make(map[string]interface{})
 	//		arg := make(map[string]interface{})
 	//		arg["first"] = "this is the first data client send"
 	//		arg["second"] = "this is second data "
-	//		res = PackQuest(peer, IsEnc, "service", "method", ctx, arg)
+	//		reply = PackQuest(peer, EncFlag, "service", "method", ctx, arg)
 	//	case 'Q': 				//Q
-	//		res = DealRequest(peer, reply)
-	//		if res == nil {
+	//		reply = DealRequest(peer, receiveData)
+	//		if reply == nil {
 	//			continue
 	//		}
 	//	case 'C':
-	//		res = UnpackCheck(peer, reply)
+	//		reply = UnpackCheck(peer, receiveData)
 	//	case 'A': 				//A
-	//		res = DealAnswer(peer, reply)
-	//		if res == nil {
+	//		reply = DealAnswer(peer, receiveData)
+	//		if reply == nil {
 	//			continue
 	//		}
 	//	case 'B':               //B
@@ -314,17 +449,17 @@ func startClientMode() {
 	//	default:
 	//		log.Fatalln("ERROR")
 	//	}
-	//	if err := websocket.Message.Send(ws, res); err != nil {  // send data
+	//	if err := websocket.Message.Send(ws, reply); err != nil {  // send data
 	//		log.Fatal(err)
 	//	}
-	//	fmt.Println("Send data ", res)
+	//	fmt.Println("Send data ", reply)
 	//	peer.client.AlreadyDeal = true
 	//}
 	
 }
 
 func main() {
-	flagMode := flag.String("mode", "client", "start in client or server")
+	flagMode := flag.String("mode", "server", "start in client or server")
 	flag.Parse()
 	if strings.ToLower(*flagMode) == "server" {
 		startServerMode()
@@ -344,7 +479,6 @@ func main() {
 //	//	panic("No know as a server or a client")
 //	//}
 //}
-
 
 
 func  String(b []byte) string {

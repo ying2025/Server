@@ -17,22 +17,22 @@ const (
 	send_add_state int64 = 2
 )
 // Judge the connection whether is Client
-// If it is client connect, return this code is not a server side
+// If it is client connect, return this code is not a peer side
 // Or check the encrypt flag. If the flag is true, then pack Authenticate message to client, else send H type to client
-func JudgeIsServer(ws *websocket.Conn) bool{
-	isClient := ws.IsClientConn()
+func JudgeIsServer(peer *PeerConn) bool{
+	isClient := peer.WsConn.IsClientConn()
 	if isClient {
 		return false
 	}
-	// server side
+	// peer side
 	var greetByte []byte
 	var err error
-	if IsEnc == true {
+	if peer.EncFlag == true {
 		greetByte = _OutCheck()
 	} else {
 		greetByte = HelloMessage.sendHello()
 	}
-	err = websocket.Message.Send(ws, greetByte)
+	err = websocket.Message.Send(peer.WsConn, greetByte)
 	if err != nil {
 		panic("send failed:")
 	}
@@ -72,20 +72,20 @@ func CheckHeader(header MessageHeader) error {
 	return  nil
 }
 // Judge whether receive repeate data.
-//func IsRepeatData(srvConn *PeerConn, reply []byte) bool{
-//	for _, value := range srvConn.UnDealReplyList {
+//func IsRepeatData(peer *PeerConn, reply []byte) bool{
+//	for _, value := range peer.UnDealReplyList {
 //		if bytes.Equal(value, reply) {
 //			return true
 //		}
 //	}
-//	srvConn.UnDealReplyList[len(srvConn.UnDealReplyList)] = reply
+//	peer.UnDealReplyList[len(peer.UnDealReplyList)] = reply
 //	return false
 //}
 // If the data is to deal, delete it from the UndealData List
-func DeleteUndealData(srvConn *PeerConn, reply []byte) {
-	for j, value := range srvConn.UnDealReplyList {
+func DeleteUndealData(peer *PeerConn, reply []byte) {
+	for j, value := range peer.UnDealReplyList {
 		if bytes.Equal(value, reply) {
-			delete(srvConn.UnDealReplyList, j)
+			delete(peer.UnDealReplyList, j)
 			return
 		}
 	}
@@ -144,7 +144,7 @@ var helloMessageBytes = [8]byte{'X','!','H'}
 func (m _HelloMessage) sendHello() []byte {
 	return helloMessageBytes[:]
 }
-// server side
+// peer side
 // SRP6a consult the common key, return C type message data
 //  pack the command and args, then decode outcheck with VBS
 // pack header and encode outcheck message, then send the C type message
@@ -158,10 +158,10 @@ func  _OutCheck() []byte{
 }
 // Resolve C type message, get command and args
 // According to command, send different command and param.
-func UnpackCheck(srvConn *PeerConn, reply string) []byte{
-	data := getData(srvConn, 0x00, reply)
+func UnpackCheck(peer *PeerConn, reply string) []byte{
+	data := getData(peer, 0x00, reply)
 	c := decodeInCheck(data)
-	result := handleCmd(srvConn, c)
+	result := handleCmd(peer, c)
 	return result
 }
 // decode C type message
@@ -176,18 +176,19 @@ func decodeInCheck(buf []byte) *_InCheck {
 }
 
 // Judge what type of command, then send the reference message to client
-func handleCmd(srvConn *PeerConn, c *_InCheck) []byte{
+func handleCmd(peer *PeerConn, c *_InCheck) []byte{
 	var msg []byte
 	switch c.cmd {
 	case "FORBIDDEN":
 		reason := c.args["reason"]
+		// Todo
 		panic("Authentication Exception, SRP6a Verify fail! The reason is: " + reason.(string))
 	case "AUTHENTICATE":
 		msg = sendSrp6a1(c.args)
 	case "SRP6a2":
 		msg = sendSrp6a3(c.args)
 	case "SRP6a4":
-		msg = verifySrp6aM2(srvConn, c.args)
+		msg = verifySrp6aM2(peer, c.args)
 	default:
 		panic("Unknown command type, SRP6a Verify fail !")
 	}
@@ -197,35 +198,35 @@ func handleCmd(srvConn *PeerConn, c *_InCheck) []byte{
 // If txid is 0, do nothing, else if the message has alread recceived, pack the error message to client.
 // else pack the answer to client
 // Return ANSWER type message
-func  DealRequest(srvConn *PeerConn, reply string) []byte{
+func  DealRequest(peer *PeerConn, reply string) []byte{
 	q := & _InQuest{}
 	isEnc := reply[3]  // encrypt flag
-	request, errAnswer := q.resolveRequest(srvConn, isEnc, reply) //resovle request
+	request, errAnswer := q.resolveRequest(peer, isEnc, reply) //resovle request
 
 	txId := request.txid
-	if txId == 0 {  // txid is 0, server is no response
+	if txId == 0 {  // txid is 0, peer is no response
 		return nil
 	}
 	if request.repeatFlag {   // repeat data, direct pack
-		return packAnswer(srvConn, isEnc, txId, errAnswer)
+		return packAnswer(peer, isEnc, txId, errAnswer)
 	}
 	var a answer
 	a = packAnswerBody(txId)
-	fmt.Println("deal request ", txId)
-	return packAnswer(srvConn, isEnc, txId, a)
+	fmt.Println("deal request txid", txId)
+	return packAnswer(peer, isEnc, txId, a)
 }
 // resolve Q type message from client
 // Get the message body, decode data with VBS, get the param.
 // Judge whether it receive the same message with different txid, If it is, then pack the error answer to client
 // Or if txid is not equal 0, record the receive List. Record receive data list
-func (q _InQuest) resolveRequest(srvConn *PeerConn, isEnc uint8, reply string) (_InQuest, answer){
+func (q _InQuest) resolveRequest(peer *PeerConn, isEnc uint8, reply string) (_InQuest, answer){
 	var errAnswer answer
-	data := getData(srvConn, isEnc, reply)
+	data := getData(peer, isEnc, reply)
 	content := decodeInQuest(data)
 	//request param
 	txId := content.txid
 	// judge whether is already receive the data expect txid
-	for _, value := range srvConn.ReceiveDataList {
+	for _, value := range peer.ReceiveDataList {
 		if bytes.Equal(data[1:], value){
 			errAnswer.status = 1
 			msg := "message is duplication"
@@ -235,9 +236,9 @@ func (q _InQuest) resolveRequest(srvConn *PeerConn, isEnc uint8, reply string) (
 			return *content, errAnswer
 		}
 	}
-	srvConn.ReceiveDataList[txId] = data[1:] // record receive data
+	peer.ReceiveDataList[txId] = data[1:] // record receive data
 	if txId != 0 {
-		srvConn.ReceiveList[len(srvConn.ReceiveList)] = txId // record receive List
+		peer.ReceiveList[len(peer.ReceiveList)] = txId // record receive List
 	}
 	return *content, errAnswer
 }
@@ -254,12 +255,12 @@ func decodeInQuest(buf []byte) *_InQuest {
 	return q
 }
 // Get the message body, If it encrypt, then decrypt it
-func getData(srvConn *PeerConn, isEnc uint8, reply string) []byte{
+func getData(peer *PeerConn, isEnc uint8, reply string) []byte{
 	var data []byte
 	len1 := int(reply[4]) << 24 + int(reply[5]) << 16 + int(reply[6]) << 8 +int(reply[7])
 	if isEnc == 0x01 {
 		data = []byte(reply[8:len1+24]) // meassage + MAC
-		data = decrypt(srvConn, data)
+		data = decrypt(peer, data)
 		if len(data) != len1 {
 			log.Fatalln("Data length not equal to bodysize")
 		}
@@ -273,16 +274,16 @@ func getData(srvConn *PeerConn, isEnc uint8, reply string) []byte{
 }
 // Deal A type message
 // Get answer type message
-func DealAnswer(srvConn *PeerConn, reply string) []byte {
+func DealAnswer(peer *PeerConn, reply string) []byte {
 	isEnc := reply[3]  // encrypt flag
-	data := getData(srvConn, isEnc, reply)
+	data := getData(peer, isEnc, reply)
 
 	a := decodeInAnswer(data)// decode data as array, and the length is 3.
 	fmt.Println("receive message", a.args)
 	if a.status != 0 {
 		panic(a.args)
 	}
-	deleteTxId(a.txid, srvConn.SendList) // delete txId that send from server
+	deleteTxId(a.txid, peer.SendList) // delete txId that send from peer
 	return nil
 }
 // decode answer
@@ -297,30 +298,30 @@ func decodeInAnswer(buf []byte) *_InAnswer {
 	return a
 }
 // pack Q type data
-func PackQuest(srvConn *PeerConn, isEnc bool, service string, method string, ctx map[string]interface{}, arg map[string]interface{}) []byte{
-	q := &_OutQuest{txid:srvConn.Txid}
+func PackQuest(peer *PeerConn, isEnc bool, service string, method string, ctx map[string]interface{}, arg map[string]interface{}) []byte{
+	q := &_OutQuest{txid:peer.Txid}
 	msg, size := q.encodeOutQuest(q.txid, service, method, ctx, arg)
 	if q.txid != 0 {
-		srvConn.SendList[len(srvConn.SendList)] = q.txid  // record send to server list
+		peer.SendList[len(peer.SendList)] = q.txid  // record send to peer list
 	}
 	fmt.Println("msg", msg)
-	//srvConn.cli.cfg.SendDataList[q.txid] = msg[1:]
-	//srvConn.SendDataList[q.txid] = msg[1:]
-	srvConn.Txid++
-	return packMsg(srvConn, isEnc, size,'Q', msg)
+	//peer.cli.cfg.SendDataList[q.txid] = msg[1:]
+	//peer.SendDataList[q.txid] = msg[1:]
+	peer.Txid++
+	return packMsg(peer, isEnc, size,'Q', msg)
 }
 // pack header and message, if the encrypt flags is true pack nonce, header, message
-func packMsg(srvConn *PeerConn, isEnc bool, size int, msgType MsgType, msg []byte) []byte{
+func packMsg(peer *PeerConn, isEnc bool, size int, msgType MsgType, msg []byte) []byte{
 	var result []byte
 	packet := fillHeader(size, msgType)// fill header message
 	if isEnc == true {
 		result = make([]byte, size+32)
-		nonceNum := packNonce(srvConn.Send_nonce)
-		srvConn.Send_nonce += send_add_state  // nonce increase
+		nonceNum := packNonce(peer.Send_nonce)
+		peer.Send_nonce += send_add_state  // nonce increase
 		copy(result[:8], nonceNum)
 		copy(result[8:16],packet)
 		result[11] = 0x01
-		msg = encrypt(srvConn, msg)
+		msg = encrypt(peer, msg)
 		copy(result[16:],msg)
 	} else {
 		result = make([]byte, len(msg)+8, len(msg)*2)
@@ -371,20 +372,20 @@ func packAnswerBody(txid int64) answer {
 		arg = packExpArg("",1001,"","","","")
 	} else {  // normal
 		a.status = 0
-		arg["first"] = "this is server reply"
-		arg["second"] = "this is Tim server"
+		arg["first"] = "this is peer reply"
+		arg["second"] = "this is Tim peer"
 	}
 	a.args =  arg
 	return a
 }
 // Assemble ANSWER type message
 // pack answer with VBS, then assemble header and message, final delete the txid that already resolve
-func packAnswer(srvConn *PeerConn, encFlag uint8,txId int64, a answer) []byte{
+func packAnswer(peer *PeerConn, encFlag uint8,txId int64, a answer) []byte{
 	content,size := encodeOutAnswer(txId, a.status,a.args) //construct a ANSWER type message
 	isEnc := encFlag == 0x01
 	var result []byte
-	result = packMsg(srvConn, isEnc, size,'A', content.buf)
-	deleteTxId(txId, srvConn.ReceiveList) // delete txId
+	result = packMsg(peer, isEnc, size,'A', content.buf)
+	deleteTxId(txId, peer.ReceiveList) // delete txId
 	fmt.Println("delete txid ", txId)
 	return result
 }
@@ -400,12 +401,12 @@ func packExpArg(name string, code int, tag string, msg string, raiser string, de
 	return arg
 }
 // encrypt data with EAX
-func encrypt(srvConn *PeerConn, msg []byte) []byte{
-	nonce, _ := hex.DecodeString(srvConn.NonceHex)
-	header, _ := hex.DecodeString(srvConn.HeaderHex)
+func encrypt(peer *PeerConn, msg []byte) []byte{
+	nonce, _ := hex.DecodeString(peer.NonceHex)
+	header, _ := hex.DecodeString(peer.HeaderHex)
 
 	out := make([]byte, 256)
-	blockCipher, _ := aes.NewCipher(srvConn.CommonKey)
+	blockCipher, _ := aes.NewCipher(peer.CommonKey)
 	ax, _ := eax.NewEax(blockCipher)
 
 	ax.Start(true, nonce, header)
@@ -415,12 +416,12 @@ func encrypt(srvConn *PeerConn, msg []byte) []byte{
 	return out[:n]
 }
 // decrypt data with EAX
-func decrypt(srvConn *PeerConn, cipherMsg []byte) ([]byte){
-	nonce, _ := hex.DecodeString(srvConn.NonceHex)
-	header, _ := hex.DecodeString(srvConn.HeaderHex)
+func decrypt(peer *PeerConn, cipherMsg []byte) ([]byte){
+	nonce, _ := hex.DecodeString(peer.NonceHex)
+	header, _ := hex.DecodeString(peer.HeaderHex)
 
 	out := make([]byte, 256)
-	blockCipher, _ := aes.NewCipher(srvConn.CommonKey)
+	blockCipher, _ := aes.NewCipher(peer.CommonKey)
 	ax, _ := eax.NewEax(blockCipher)
 
 	ax.Start(false, nonce, header)
@@ -431,7 +432,7 @@ func decrypt(srvConn *PeerConn, cipherMsg []byte) ([]byte){
 }
 
 var cli srp6a.Srp6aClient
- // create client object, set id and password of the client, send id to server.
+ // create client object, set id and password of the client, send id to peer.
 func sendSrp6a1(args map[string]interface{}) []byte{
 	method := args["method"]
 	if method != "SRP6a" {
@@ -471,16 +472,16 @@ func sendSrp6a3(args map[string]interface{}) []byte{
 	arg["M1"] = M11
 	return packCheckCmd(command, arg)
 }
- // According to srp6a, Compute M2, verify server send M2. Confirm the public key.
-func verifySrp6aM2(srvConn *PeerConn, args map[string]interface{}) []byte{
+ // According to srp6a, Compute M2, verify peer send M2. Confirm the public key.
+func verifySrp6aM2(peer *PeerConn, args map[string]interface{}) []byte{
 	M2hex := args["M2"].(string)
 	M2_mine := cli.ComputeM2()
 	M2, _ := hex.DecodeString(M2hex)
 	if !bytes.Equal(M2_mine, M2) {
 		panic("srp6a M2 not equal")
 	}
-	srvConn.CommonKey = cli.ComputeK()
-	fmt.Println("Key", srvConn.CommonKey)
+	peer.CommonKey = cli.ComputeK()
+	fmt.Println("Key", peer.CommonKey)
 	cli = srp6a.Srp6aClient{} // clear client
 	return nil
 }
@@ -488,10 +489,10 @@ func verifySrp6aM2(srvConn *PeerConn, args map[string]interface{}) []byte{
 // resolve C type data
 // Get data body, then decode the data with vbs
 // According to command, send the reference message to client.
-func  DealCheck(srvConn *PeerConn,reply string) []byte{
-	data := getData(srvConn, 0x00, reply)
+func  DealCheck(peer *PeerConn,reply string) []byte{
+	data := getData(peer, 0x00, reply)
 	c := decodeInCheck(data)
-	return c.dealCommand(srvConn, c)
+	return c.dealCommand(peer, c)
 }
 
 //Negotiate Secret key
@@ -499,7 +500,7 @@ func  DealCheck(srvConn *PeerConn,reply string) []byte{
 // If it is "SRP6a3" compute M1, compare M1 with the M1 that client transfer .
 // If them is equal, then compute M2, pack M2 with command
 // else negotita fail.
-func (outcheck *_InCheck) dealCommand(srvConn *PeerConn, c *_InCheck) []byte{
+func (outcheck *_InCheck) dealCommand(peer *PeerConn, c *_InCheck) []byte{
 	cmd := c.cmd
 	hexN := "EEAF0AB9ADB38DD69C33F80AFA8FC5E86072618775FF3C0B9EA2314C" +
 		"9C256576D674DF7496EA81D3383B4813D692C6E0E0D5D8E250B98BE4" +
@@ -534,13 +535,13 @@ func (outcheck *_InCheck) dealCommand(srvConn *PeerConn, c *_InCheck) []byte{
 		} else {
 			panic("Cann't find this user!")
 		}
-		srvConn.srv.NewServer(g, N, BITS, hashName)
+		peer.srv.NewServer(g, N, BITS, hashName)
 		//salt := srp6a.GenerateSalt()
 		//saltHex := hex.EncodeToString(salt)
 		//fmt.Println("Salt", saltHex)
 		verifier, _ := hex.DecodeString(verifierHex)
-		srvConn.srv.SetV(verifier)
-		B := srvConn.srv.GenerateB()
+		peer.srv.SetV(verifier)
+		B := peer.srv.GenerateB()
 		BHex := hex.EncodeToString(B)
 		outcheck.cmd = "SRP6a2"
 		args := make(map[string]interface{})
@@ -555,29 +556,30 @@ func (outcheck *_InCheck) dealCommand(srvConn *PeerConn, c *_InCheck) []byte{
 		M11 := c.args["M1"].(string)
 		A, _ := hex.DecodeString(A1)
 		M1, _ := hex.DecodeString(M11)
-		srvConn.srv.SetA(A)
-		srvConn.srv.ComputeS()
-		M1_mine := srvConn.srv.ComputeM1()
+		peer.srv.SetA(A)
+		peer.srv.ComputeS()
+		M1_mine := peer.srv.ComputeM1()
 		if bytes.Equal(M1, M1_mine) {
-			M2 := srvConn.srv.ComputeM2()
+			M2 := peer.srv.ComputeM2()
 			outcheck.cmd = "SRP6a4"
 			args := make(map[string]interface{})
 			args["M2"] = M2
 			outcheck.args = args
-			srvConn.CommonKey = srvConn.srv.ComputeK()
-			srvConn.srv =  srp6a.Srp6aServer{}
+			peer.CommonKey = peer.srv.ComputeK()
+			peer.EncFlag = true
+			peer.srv =  srp6a.Srp6aServer{}
 		} else {
 			err = fmt.Errorf("Srp6a Error, M1 is different!")
 		}
 	} else {
 		err = fmt.Errorf("XIC.WARNING", "#=client authentication failed")
 	}
-	if err != nil && bytes.Equal(srvConn.CommonKey, nil) { //SRP6a Error
+	if err != nil && bytes.Equal(peer.CommonKey, nil) { //SRP6a Error
 		outcheck.cmd = "FORBIDDEN"
 		args := make(map[string]interface{})
 		args["reason"] = err
 		outcheck.args = args
-		srvConn.srv =  srp6a.Srp6aServer{}
+		peer.srv =  srp6a.Srp6aServer{}
 	} else if err != nil { // Expection
 		panic(err)
 	}
@@ -596,16 +598,16 @@ func (m _ByeMessage) sendBye() []byte {
 // common header
 var commonHeaderBytes = [8]byte{'X','!'}
 // Active request close
-func Close(srvConn *PeerConn) bool {
+func Close(peer *PeerConn) bool {
 	flag := false
 	var res []byte
-	flag = GracefulClose(srvConn)
+	flag = GracefulClose(peer)
 	if flag == true {
-		if len(srvConn.UnDealReplyList) != 0{ // UnDealReplyList is not empty
+		if len(peer.UnDealReplyList) != 0{ // UnDealReplyList is not empty
 			return false
 		}
 		res = theByeMessages.sendBye()
-		err := websocket.Message.Send(srvConn.WsConn, res);
+		err := websocket.Message.Send(peer.WsConn, res);
 		if err != nil {
 			fmt.Println("send failed:", err, )
 			return false
@@ -617,18 +619,18 @@ func Close(srvConn *PeerConn) bool {
 //Gracefully close the connection with one client.
 // If receiveList is empty, directly send Bye to client
 // else deal with request firstly, send Bye to client when receiveList is empty
-func GracefulClose(srvConn *PeerConn) bool{
+func GracefulClose(peer *PeerConn) bool{
 	var res []byte
 	var err error
-	for _, value := range srvConn.ReceiveList { // receive list
+	for _, value := range peer.ReceiveList { // receive list
 		var txId int64 = value
-		data := srvConn.ReceiveDataList[txId]
+		data := peer.ReceiveDataList[txId]
 		fmt.Println("--Undeal request to send ", data)
 
 		var a answer
 		a = packAnswerBody(txId)
-		res = packAnswer(srvConn, 0x01, txId, a)
-		err = websocket.Message.Send(srvConn.WsConn, res)
+		res = packAnswer(peer, 0x01, txId, a)
+		err = websocket.Message.Send(peer.WsConn, res)
 		time.Sleep(5 * time.Second)
 		if err != nil {
 			fmt.Println("send failed:", err, )
@@ -636,18 +638,18 @@ func GracefulClose(srvConn *PeerConn) bool{
 		}
 	}
 	attempTimes := 0
-	for len(srvConn.SendList) != 0 {  // send List
+	for len(peer.SendList) != 0 {  // send List
 		done := startTimer(func(now time.Time) {
 			fmt.Println("Waiting for reply that already send" ,now)
 		})
 		time.Sleep(5 * time.Second)
 		close(done)
 		attempTimes++
-		if attempTimes > len(srvConn.SendList) || len(srvConn.SendList) == 0{
+		if attempTimes > len(peer.SendList) || len(peer.SendList) == 0{
 			return true   // Force close
 		}
 	}
-	if len(srvConn.ReceiveList) == 0 && len(srvConn.SendList) == 0 {
+	if len(peer.ReceiveList) == 0 && len(peer.SendList) == 0 {
 		return true
 	}
 	return false

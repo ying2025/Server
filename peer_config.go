@@ -7,8 +7,10 @@ import (
 )
 
 var maxAttempTimes int8 = 3
+const defaultMaxJobNum int = 4
 type Config struct {
 	AuthEnc 		bool // authenticated encryption
+	EncFlag			bool
 	clientId		int64
 	Txid			int64
 	Send_nonce 		int64
@@ -23,6 +25,8 @@ type Config struct {
 	SendDataList 	map[int64][]byte  // As a client active request to server data list which the key is txid
 	SendChan		chan []byte
 	ReceiveChan     chan  string
+	NodeID			string
+	Name			string
 }
 
 func InitConfig() *Config {
@@ -55,6 +59,7 @@ type ServerConfig struct {
 
 func NewServerConfig(ws *websocket.Conn) *PeerConn{
 	cfg := InitConfig()
+	cfg.EncFlag = true
 	return &PeerConn{
 		WsConn: 			ws,
 		Config: 			cfg,
@@ -84,6 +89,7 @@ type ClientConfig struct {
 
 func NewClientConfig(ws *websocket.Conn) *PeerConn{
 	cfg := InitConfig()
+	cfg.EncFlag = false
 	return &PeerConn{
 		WsConn: 			ws,
 		Config: 			cfg,
