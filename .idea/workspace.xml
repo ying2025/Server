@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/server.go" line="65" />
+    <bookmark url="file://$PROJECT_DIR$/deal.go" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="f3ca03ad-e9bb-4cdb-b33e-f40100032426" name="Default" comment="">
+      <change afterPath="$PROJECT_DIR$/websocket/worker_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deal.go" beforeDir="false" afterPath="$PROJECT_DIR$/deal.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/server.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/peer.go" beforeDir="false" afterPath="$PROJECT_DIR$/peer.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/peer_config.go" beforeDir="false" afterPath="$PROJECT_DIR$/peer_config.go" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -15,45 +16,68 @@
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="DatabaseView">
+    <option name="SHOW_INTERMEDIATE" value="true" />
+    <option name="GROUP_DATA_SOURCES" value="true" />
+    <option name="GROUP_SCHEMA" value="true" />
+    <option name="GROUP_CONTENTS" value="false" />
+    <option name="SORT_POSITIONED" value="false" />
+    <option name="SHOW_EMPTY_GROUPS" value="false" />
+    <option name="AUTO_SCROLL_FROM_SOURCE" value="false" />
+    <option name="HIDDEN_KINDS">
+      <set />
+    </option>
+    <expand />
+    <select />
+  </component>
   <component name="FUSProjectUsageTrigger">
     <session id="-1346419511">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="10" />
-          <entry key="project.open.time.1" value="1" />
-          <entry key="project.open.time.26" value="1" />
+          <entry key="project.closed" value="37" />
+          <entry key="project.open.time.1" value="7" />
+          <entry key="project.open.time.16" value="1" />
+          <entry key="project.open.time.2" value="4" />
+          <entry key="project.open.time.24" value="1" />
+          <entry key="project.open.time.26" value="2" />
           <entry key="project.open.time.28" value="1" />
-          <entry key="project.open.time.31" value="3" />
-          <entry key="project.open.time.32" value="3" />
-          <entry key="project.open.time.39" value="1" />
+          <entry key="project.open.time.30" value="2" />
+          <entry key="project.open.time.31" value="5" />
+          <entry key="project.open.time.32" value="6" />
+          <entry key="project.open.time.33" value="2" />
+          <entry key="project.open.time.34" value="2" />
+          <entry key="project.open.time.35" value="2" />
+          <entry key="project.open.time.36" value="1" />
+          <entry key="project.open.time.39" value="2" />
+          <entry key="project.open.time.40" value="1" />
           <entry key="project.open.time.5" value="1" />
           <entry key="project.open.time.7" value="1" />
-          <entry key="project.opened" value="12" />
+          <entry key="project.opened" value="41" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Go" value="35" />
-          <entry key="x86 Plan9 Assembly" value="6" />
+          <entry key="Go" value="180" />
+          <entry key="x86 Plan9 Assembly" value="9" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.go.postfix.template.usages.trigger" />
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="go" value="35" />
-          <entry key="s" value="6" />
+          <entry key="go" value="180" />
+          <entry key="s" value="9" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Go" value="3495" />
+          <entry key="Go" value="11207" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
       <usages-collector id="statistics.js.language.service.starts" />
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="go" value="3495" />
+          <entry key="go" value="11207" />
         </counts>
       </usages-collector>
     </session>
@@ -61,28 +85,19 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/deal.go">
+        <entry file="file://$PROJECT_DIR$/websocket/server_test.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1722">
-              <caret line="502" column="26" selection-start-line="502" selection-start-column="26" selection-end-line="502" selection-end-column="26" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/util.go">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="648">
-              <caret line="24" column="11" selection-start-line="24" selection-start-column="5" selection-end-line="24" selection-end-column="11" />
+            <state relative-caret-position="135">
+              <caret line="5" column="6" lean-forward="true" selection-start-line="5" selection-start-column="6" selection-end-line="5" selection-end-column="6" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/server.go">
+        <entry file="file://$PROJECT_DIR$/websocket/peer.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="176">
-              <caret line="63" column="5" lean-forward="true" selection-start-line="63" selection-start-column="5" selection-end-line="63" selection-end-column="5" />
+            <state relative-caret-position="312">
+              <caret line="236" column="43" selection-start-line="236" selection-start-column="43" selection-end-line="236" selection-end-column="43" />
             </state>
           </provider>
         </entry>
@@ -98,54 +113,38 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>packAnswer</find>
-      <find>send_nonce</find>
-      <find>packNonce</find>
-      <find>Send_nonce</find>
-      <find>receiveList</find>
-      <find>sendList</find>
-      <find>sendDataList</find>
-      <find>SendDataList</find>
-      <find>dealCommand</find>
-      <find>decodeAnswer</find>
-      <find>decodeQuest</find>
-      <find>answer</find>
-      <find>command</find>
-      <find>SendList</find>
-      <find>NonceList</find>
-      <find>UnDealReplyList</find>
-      <find>closeFlag</find>
-      <find>ReceiveDataList</find>
-      <find>CloseFlag</find>
-      <find>RejectRequestFlag</find>
-      <find>srv</find>
-      <find>srv.</find>
-      <find>handleCmd</find>
-      <find>eax</find>
-      <find>a.txid</find>
-      <find>SendByteFlag</find>
-      <find>resolveRequest</find>
-      <find>MsgType</find>
-      <find>_ByeMessage</find>
-      <find>HelloMessage</find>
+      <find>InitPeerConfig</find>
+      <find>g</find>
+      <find>verifySrp6aM2</find>
+      <find>arg</find>
+      <find>PeersNum</find>
+      <find>NewServerConfig</find>
+      <find>cli</find>
+      <find>ServerConn</find>
+      <find>DefaultInitClient</find>
+      <find>initConfig</find>
+      <find>srvConn.CommonKey</find>
+      <find>ComputeK</find>
+      <find>main</find>
+      <find>EchoHandle</find>
+      <find>initiatorAsClient</find>
+      <find>res</find>
+      <find>sendData</find>
+      <find>serverReceive</find>
+      <find>server.jobChan</find>
+      <find>JudgeIsServer(server)</find>
+      <find>JudgeIsServer</find>
+      <find>srvConn</find>
+      <find>EncFlag</find>
+      <find>IsEnc</find>
+      <find>server.PeerCount</find>
+      <find>log.DEBUG.Print</find>
+      <find>log.DEBUG.Printf</find>
+      <find>NewPool</find>
+      <find>ResourceProcessor</find>
+      <find>strings</find>
     </findStrings>
     <replaceStrings>
-      <replace>Srp6aCheck</replace>
-      <replace>Srp6aParam</replace>
-      <replace>KeyByte</replace>
-      <replace>key</replace>
-      <replace>A</replace>
-      <replace>dealCommand</replace>
-      <replace>decodeVbs</replace>
-      <replace>getData</replace>
-      <replace>DealAnswer</replace>
-      <replace>PackQuest</replace>
-      <replace>IsEnc</replace>
-      <replace>packCheckCmd</replace>
-      <replace>setParameter</replace>
-      <replace>inQuest</replace>
-      <replace>_OutCheck</replace>
-      <replace>HellowMessage</replace>
       <replace>deleteTxId</replace>
       <replace>encodeOutQuest</replace>
       <replace>encodeOutAnswer</replace>
@@ -160,6 +159,22 @@
       <replace>RejectRequestFlag</replace>
       <replace>RejectReqFlag</replace>
       <replace>srvConn.srv.</replace>
+      <replace>receiveEncMsg</replace>
+      <replace>Config</replace>
+      <replace>cli</replace>
+      <replace>CommonKey</replace>
+      <replace>server.cli.cfg</replace>
+      <replace>PeerCount</replace>
+      <replace>PeerConn</replace>
+      <replace>InitConfig</replace>
+      <replace>initClient</replace>
+      <replace>echoHandle</replace>
+      <replace>startClientMode</replace>
+      <replace>sendData</replace>
+      <replace>reply</replace>
+      <replace>peer</replace>
+      <replace>EncFlag</replace>
+      <replace>fmt.Println</replace>
     </replaceStrings>
   </component>
   <component name="GOROOT" path="E:\Go" />
@@ -171,14 +186,29 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/../mangos/srp6a/srp6a.go" />
-        <option value="$PROJECT_DIR$/srp6a/srp6a.go" />
-        <option value="$PROJECT_DIR$/srp6a/srp6a_test.go" />
         <option value="$PROJECT_DIR$/config.go" />
         <option value="$PROJECT_DIR$/../../golang.org/x/net/websocket/websocket.go" />
         <option value="$PROJECT_DIR$/util.go" />
         <option value="$PROJECT_DIR$/eax/eax.go" />
-        <option value="$PROJECT_DIR$/deal.go" />
+        <option value="$PROJECT_DIR$/client.go" />
+        <option value="$PROJECT_DIR$/websocket/server_test.go" />
+        <option value="$PROJECT_DIR$/client_websocket.go" />
+        <option value="$PROJECT_DIR$/websocket.go" />
+        <option value="$PROJECT_DIR$/srp6a/srp6a.go" />
         <option value="$PROJECT_DIR$/server.go" />
+        <option value="$PROJECT_DIR$/srp6a/srp6a_test.go" />
+        <option value="$PROJECT_DIR$/websocket/util.go" />
+        <option value="$PROJECT_DIR$/websocket/deal.go" />
+        <option value="$PROJECT_DIR$/websocket/peer_config.go" />
+        <option value="$PROJECT_DIR$/websocket/server.go" />
+        <option value="$PROJECT_DIR$/queue_test.go" />
+        <option value="$PROJECT_DIR$/websocket/queue_test.go" />
+        <option value="$PROJECT_DIR$/deal.go" />
+        <option value="$PROJECT_DIR$/websocket/channel_test.go" />
+        <option value="$PROJECT_DIR$/websocket/worker_test.go" />
+        <option value="$PROJECT_DIR$/peer_config.go" />
+        <option value="$PROJECT_DIR$/peer.go" />
+        <option value="$PROJECT_DIR$/websocket/peer.go" />
       </list>
     </option>
   </component>
@@ -189,10 +219,10 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-212" />
-    <option name="y" value="11" />
-    <option name="width" value="1086" />
-    <option name="height" value="864" />
+    <option name="x" value="-219" />
+    <option name="y" value="9" />
+    <option name="width" value="1281" />
+    <option name="height" value="890" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -200,6 +230,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -210,18 +241,12 @@
             <path>
               <item name="server" type="b2602c69:ProjectViewProjectNode" />
               <item name="server" type="462c0819:PsiDirectoryNode" />
-              <item name="eax" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="server" type="b2602c69:ProjectViewProjectNode" />
-              <item name="server" type="462c0819:PsiDirectoryNode" />
-              <item name="vbs" type="462c0819:PsiDirectoryNode" />
+              <item name="websocket" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -231,13 +256,18 @@
     <property name="configurable.Project.GOPATH.is.expanded" value="true" />
     <property name="go.gopath.indexing.explicitly.defined" value="true" />
     <property name="go.sdk.automatically.set" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../mangos" />
+    <property name="go.vendoring.notification.had.been.shown" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../ethereum" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="editor.preferences.fonts.default" />
   </component>
   <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\goSpace\src\github.com\server\websocket" />
+    </key>
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\goSpace\src\github.com\server\websocket" />
       <recent name="D:\goSpace\src\github.com\server" />
     </key>
   </component>
@@ -253,108 +283,136 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Go Build.go build deal.go server.go util.go">
-    <configuration name="go build deal.go server.go util.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Go Test.TestNode in github.com/server/websocket">
+    <configuration name="go build deal.go peer.go peer_config.go util.go" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="server" />
       <working_directory value="$PROJECT_DIR$/" />
       <go_parameters value="-i" />
       <kind value="FILE" />
-      <filePath value="$PROJECT_DIR$/deal.go|$PROJECT_DIR$/server.go|$PROJECT_DIR$/util.go" />
+      <filePath value="$PROJECT_DIR$/deal.go|$PROJECT_DIR$/peer.go|$PROJECT_DIR$/peer_config.go|$PROJECT_DIR$/util.go" />
       <package value="github.com/server" />
       <directory value="$PROJECT_DIR$/" />
       <method v="2" />
     </configuration>
-    <configuration name="BenchmarkSrp6a in github.com/server/srp6a" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="Test in github.com/server" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="server" />
-      <working_directory value="$PROJECT_DIR$/srp6a" />
-      <go_parameters value="-i" />
-      <framework value="gobench" />
-      <kind value="PACKAGE" />
-      <package value="github.com/server/srp6a" />
-      <directory value="$PROJECT_DIR$/" />
-      <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^BenchmarkSrp6a$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestSrp6a in github.com/server/srp6a" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="server" />
-      <working_directory value="$PROJECT_DIR$/srp6a" />
+      <working_directory value="$PROJECT_DIR$" />
       <go_parameters value="-i" />
       <framework value="gotest" />
       <kind value="PACKAGE" />
-      <package value="github.com/server/srp6a" />
+      <package value="github.com/server" />
       <directory value="$PROJECT_DIR$/" />
       <filePath value="$PROJECT_DIR$/" />
-      <pattern value="^TestSrp6a$" />
+      <pattern value="^Test$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestNode in github.com/server/websocket" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="server" />
+      <working_directory value="$PROJECT_DIR$/websocket" />
+      <go_parameters value="-i" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/server/websocket" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <pattern value="^TestNode$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestPool_Start in github.com/server/websocket" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="server" />
+      <working_directory value="$PROJECT_DIR$/websocket" />
+      <go_parameters value="-i" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/server/websocket" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <pattern value="^TestPool_Start$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestWorker in github.com/server/websocket" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="server" />
+      <working_directory value="$PROJECT_DIR$/websocket" />
+      <go_parameters value="-i" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/server/websocket" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <pattern value="^TestWorker$" />
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Go Build.go build deal.go server.go util.go" />
-      <item itemvalue="Go Test.TestSrp6a in github.com/server/srp6a" />
-      <item itemvalue="Go Test.BenchmarkSrp6a in github.com/server/srp6a" />
+      <item itemvalue="Go Build.go build deal.go peer.go peer_config.go util.go" />
+      <item itemvalue="Go Test.Test in github.com/server" />
+      <item itemvalue="Go Test.TestWorker in github.com/server/websocket" />
+      <item itemvalue="Go Test.TestPool_Start in github.com/server/websocket" />
+      <item itemvalue="Go Test.TestNode in github.com/server/websocket" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Build.go build deal.go server.go util.go" />
-        <item itemvalue="Go Test.TestSrp6a in github.com/server/srp6a" />
-        <item itemvalue="Go Test.BenchmarkSrp6a in github.com/server/srp6a" />
+        <item itemvalue="Go Test.TestNode in github.com/server/websocket" />
+        <item itemvalue="Go Build.go build deal.go peer.go peer_config.go util.go" />
+        <item itemvalue="Go Test.TestPool_Start in github.com/server/websocket" />
+        <item itemvalue="Go Test.TestWorker in github.com/server/websocket" />
+        <item itemvalue="Go Test.Test in github.com/server" />
       </list>
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="TestSrp6a_in_github_com_server_srp6a - 2018.09.27 at 15h 30m 27s.xml">
-      <configuration name="TestSrp6a in github.com/server/srp6a" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestWorker_in_github_com_server_websocket - 2018.11.12 at 11h 25m 00s.xml">
+      <configuration name="TestWorker in github.com/server/websocket" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestSrp6a_in_github_com_server_srp6a - 2018.09.27 at 15h 53m 25s.xml">
-      <configuration name="TestSrp6a in github.com/server/srp6a" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestWorker_in_github_com_server_websocket - 2018.11.12 at 11h 25m 34s.xml">
+      <configuration name="TestWorker in github.com/server/websocket" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestSrp6a_in_github_com_server_srp6a - 2018.09.30 at 11h 25m 06s.xml">
-      <configuration name="TestSrp6a in github.com/server/srp6a" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestWorker_in_github_com_server_websocket - 2018.11.12 at 11h 25m 53s.xml">
+      <configuration name="TestWorker in github.com/server/websocket" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestSrp6a_in_github_com_server_srp6a - 2018.09.30 at 11h 25m 14s.xml">
-      <configuration name="TestSrp6a in github.com/server/srp6a" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestWorker_in_github_com_server_websocket - 2018.11.12 at 11h 26m 10s.xml">
+      <configuration name="TestWorker in github.com/server/websocket" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestSrp6a_in_github_com_server_srp6a - 2018.09.30 at 11h 25m 22s.xml">
-      <configuration name="TestSrp6a in github.com/server/srp6a" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestWorker_in_github_com_server_websocket - 2018.11.12 at 11h 26m 28s.xml">
+      <configuration name="TestWorker in github.com/server/websocket" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestSrp6a_in_github_com_server_srp6a - 2018.09.30 at 11h 25m 42s.xml">
-      <configuration name="TestSrp6a in github.com/server/srp6a" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestWorker_in_github_com_server_websocket - 2018.11.12 at 11h 29m 42s.xml">
+      <configuration name="TestWorker in github.com/server/websocket" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestSrp6a_in_github_com_server_srp6a - 2018.09.30 at 11h 28m 40s.xml">
-      <configuration name="TestSrp6a in github.com/server/srp6a" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestWorker_in_github_com_server_websocket - 2018.11.12 at 11h 39m 03s.xml">
+      <configuration name="TestWorker in github.com/server/websocket" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestSrp6a_in_github_com_server_srp6a - 2018.09.30 at 11h 28m 51s.xml">
-      <configuration name="TestSrp6a in github.com/server/srp6a" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestPool_Start_in_github_com_server_websocket - 2018.11.12 at 14h 37m 51s.xml">
+      <configuration name="TestPool_Start in github.com/server/websocket" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestSrp6a_in_github_com_server_srp6a - 2018.09.30 at 11h 29m 12s.xml">
-      <configuration name="TestSrp6a in github.com/server/srp6a" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestPool_Start_in_github_com_server_websocket - 2018.11.12 at 14h 40m 23s.xml">
+      <configuration name="TestPool_Start in github.com/server/websocket" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestSrp6a_in_github_com_server_srp6a - 2018.09.30 at 11h 29m 23s.xml">
-      <configuration name="TestSrp6a in github.com/server/srp6a" configurationId="GoTestRunConfiguration" />
+    <history-entry file="TestNode_in_github_com_server_websocket - 2018.11.14 at 15h 23m 20s.xml">
+      <configuration name="TestNode in github.com/server/websocket" configurationId="GoTestRunConfiguration" />
     </history-entry>
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1616" height="876" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.106683806" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.15938303" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.19973369" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.41318977" />
-      <window_info active="true" anchor="bottom" id="Debug" order="3" sideWeight="0.4980507" visible="true" weight="0.25168237" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.33647376" />
+      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.49678662" weight="0.20726784" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Database Changes" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Terminal" order="8" weight="0.32974428" />
-      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.5019493" side_tool="true" weight="0.5409836" />
+      <window_info anchor="bottom" id="Event Log" order="9" sideWeight="0.50321335" side_tool="true" weight="0.34051144" />
       <window_info anchor="bottom" id="Version Control" order="10" sideWeight="0.5012854" side_tool="true" weight="0.57604307" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="Database" order="3" />
+      <window_info anchor="right" id="Database" order="3" weight="0.32969153" />
     </layout>
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -377,15 +435,29 @@
           <option name="timeStamp" value="6" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/deal.go</url>
-          <line>81</line>
-          <option name="timeStamp" value="90" />
+          <url>file://$PROJECT_DIR$/srp6a/srp6a_test.go</url>
+          <line>82</line>
+          <option name="timeStamp" value="43" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/server.go</url>
-          <line>119</line>
-          <properties />
-          <option name="timeStamp" value="91" />
+          <url>file://$PROJECT_DIR$/srp6a/srp6a_test.go</url>
+          <line>81</line>
+          <option name="timeStamp" value="44" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/srp6a/srp6a_test.go</url>
+          <line>79</line>
+          <option name="timeStamp" value="46" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/peer.go</url>
+          <line>108</line>
+          <option name="timeStamp" value="54" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/peer.go</url>
+          <line>116</line>
+          <option name="timeStamp" value="55" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
@@ -396,44 +468,9 @@
     </watches-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/eax/eax_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1131" />
-      </provider>
-    </entry>
-    <entry file="file://E:/Go/src/time/time.go" />
-    <entry file="file://$PROJECT_DIR$/../mangos/vbs/decode.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="340">
-          <caret line="126" selection-start-line="126" selection-end-line="126" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/vbs/encode.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="342">
-          <caret line="139" column="5" selection-start-line="139" selection-start-column="5" selection-end-line="139" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/vbs/limits.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="216">
-          <caret line="10" column="4" selection-start-line="10" selection-start-column="4" selection-end-line="10" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/deal1.go" />
     <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/examplehandler_test.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-128" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/websocket_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="405">
-          <caret line="31" selection-start-line="31" selection-end-line="31" />
-        </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../mangos/srp6a/srp6a.go">
@@ -444,72 +481,12 @@
       </provider>
     </entry>
     <entry file="file://E:/Go/src/fmt/print.go" />
-    <entry file="file://$PROJECT_DIR$/vbs/decode.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="233">
-          <caret line="122" column="5" selection-start-line="122" selection-start-column="5" selection-end-line="122" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/dial.go">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/srp6a/srp6a_test.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="263">
-          <caret line="41" column="14" lean-forward="true" selection-start-line="41" selection-start-column="14" selection-end-line="41" selection-end-column="14" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/srp6a/srp6a.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-5338">
-          <caret line="22" column="15" selection-start-line="22" selection-start-column="5" selection-end-line="22" selection-end-column="15" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/config.go" />
-    <entry file="file://E:/Go/src/sync/mutex.go" />
     <entry file="file://E:/Go/src/sync/rwmutex.go" />
     <entry file="file://E:/Go/src/net/http/request.go" />
-    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/hybi.go">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/client.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="540">
-          <caret line="26" column="18" lean-forward="true" selection-start-line="26" selection-start-column="18" selection-end-line="26" selection-end-column="18" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://E:/Go/src/net/http/server.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="116">
-          <caret line="1696" selection-start-line="1696" selection-end-line="1696" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/server.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="96">
-          <caret line="111" selection-start-line="111" selection-end-line="111" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://E:/Go/src/runtime/panic.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="27">
-          <caret line="573" column="1" lean-forward="true" selection-start-line="573" selection-start-column="1" selection-end-line="573" selection-end-column="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/websocket.go">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="162">
-          <caret line="269" column="27" selection-start-line="269" selection-start-column="16" selection-end-line="269" selection-end-column="27" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://E:/Go/src/runtime/time.go">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="290">
@@ -517,48 +494,303 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/eax/eax.go">
+    <entry file="file://E:/Go/src/sync/mutex.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="27">
-          <caret line="1" column="63" selection-start-line="1" selection-start-column="63" selection-end-line="1" selection-end-column="63" />
-          <folding>
-            <element signature="e#83#120#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="5157">
+          <caret line="195" selection-start-line="195" selection-end-line="195" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/vbs/vbs_test.go">
+    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/hybi.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="405">
-          <caret line="164" column="53" lean-forward="true" selection-start-line="164" selection-start-column="10" selection-end-line="164" selection-end-column="53" />
+        <state relative-caret-position="8235">
+          <caret line="318" selection-start-line="318" selection-end-line="318" />
         </state>
       </provider>
     </entry>
-    <entry file="file://E:/Go/src/runtime/asm_amd64.s">
+    <entry file="file://E:/Go/src/bufio/bufio.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="247">
-          <caret line="508" selection-start-line="508" selection-end-line="508" />
+        <state relative-caret-position="6426">
+          <caret line="243" selection-start-line="243" selection-end-line="243" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/builtin/builtin.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="199">
+          <caret line="140" column="5" selection-start-line="140" selection-start-column="5" selection-end-line="140" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/dial_test.go">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/websocket_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="4319">
+          <caret line="201" column="25" selection-start-line="201" selection-start-column="25" selection-end-line="201" selection-end-column="25" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/client.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="432">
+          <caret line="25" column="5" selection-start-line="25" selection-start-column="5" selection-end-line="25" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/io/io.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="310">
+          <caret line="90" column="4" selection-start-line="90" selection-start-column="4" selection-end-line="90" selection-end-column="4" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/util.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="648">
-          <caret line="24" column="11" selection-start-line="24" selection-start-column="5" selection-end-line="24" selection-end-column="11" />
+        <state relative-caret-position="243">
+          <caret line="75" column="14" lean-forward="true" selection-start-line="75" selection-start-column="14" selection-end-line="75" selection-end-column="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/server.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="81">
+          <caret line="89" selection-start-line="89" selection-end-line="89" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/net/http/server.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="337">
+          <caret line="1696" selection-start-line="1696" selection-end-line="1696" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vbs/decode.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="138">
+          <caret line="138" column="5" selection-start-line="138" selection-start-column="5" selection-end-line="138" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/srp6a/srp6a.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-8">
+          <caret line="227" lean-forward="true" selection-start-line="227" selection-end-line="227" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/runtime/asm_amd64.s">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="238">
+          <caret line="2335" column="15" selection-start-line="2335" selection-start-column="15" selection-end-line="2335" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/srp6a/srp6a_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="27">
+          <caret line="64" column="1" selection-start-line="64" selection-start-column="1" selection-end-line="64" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/websocket/util.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="135">
+          <caret line="5" column="33" lean-forward="true" selection-start-line="5" selection-start-column="33" selection-end-line="5" selection-end-column="33" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/websocket/peer_config.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state>
+          <caret column="17" selection-start-column="17" selection-end-column="17" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/websocket/server.go" />
+    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/websocket/websocket.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="12">
+          <caret line="306" column="16" selection-start-line="306" selection-start-column="16" selection-end-line="306" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/flag/flag.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="153">
+          <caret line="938" column="5" selection-start-line="938" selection-start-column="5" selection-end-line="938" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/runtime/proc.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="243">
+          <caret line="216" selection-start-line="216" selection-end-line="216" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../golang.org/x/net/context/go19.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="474">
+          <caret line="19" column="5" selection-start-line="19" selection-start-column="5" selection-end-line="19" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/websocket/queue_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1296">
+          <caret line="54" column="31" selection-start-line="54" selection-start-column="31" selection-end-line="54" selection-end-column="31" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/testing/testing.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="369">
+          <caret line="703" selection-start-line="703" selection-end-line="703" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/internal/race/norace.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="452">
+          <caret line="41" selection-start-line="41" selection-end-line="41" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/websocket/channel_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="279">
+          <caret line="98" lean-forward="true" selection-start-line="98" selection-end-line="98" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/runtime/panic.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="146">
+          <caret line="576" selection-start-line="576" selection-end-line="576" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/peer_config.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1377">
+          <caret line="56" column="20" selection-start-line="56" selection-start-column="20" selection-end-line="56" selection-end-column="20" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/crypto/aes/cipher.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="238">
+          <caret line="30" column="5" selection-start-line="30" selection-start-column="5" selection-end-line="30" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/encoding/hex/hex.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="864">
+          <caret line="32" lean-forward="true" selection-start-line="32" selection-end-line="32" />
+          <folding>
+            <element signature="e#234#276#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/strings/strings.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="157">
+          <caret line="604" column="5" selection-start-line="604" selection-start-column="5" selection-end-line="604" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/eax/eax_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="270">
+          <caret line="31" column="10" selection-start-line="31" selection-start-column="10" selection-end-line="31" selection-end-column="10" />
+          <folding>
+            <element signature="e#18#124#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../mangos/eax/eax.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-999">
+          <caret line="38" column="21" selection-start-line="38" selection-start-column="21" selection-end-line="38" selection-end-column="21" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/eax/eax.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="107">
+          <caret line="126" selection-start-line="126" selection-end-line="126" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://E:/Go/src/bytes/buffer.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="255">
+          <caret line="452" column="5" selection-start-line="452" selection-start-column="5" selection-end-line="452" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vbs/vbs_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="257">
+          <caret line="144" column="18" selection-start-line="144" selection-start-column="18" selection-end-line="144" selection-end-column="18" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/vbs/encode.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="651">
+          <caret line="399" selection-start-line="399" selection-end-line="399" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/websocket/worker_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="660">
+          <caret line="48" column="14" selection-start-line="48" selection-start-column="14" selection-end-line="48" selection-end-column="14" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/deal.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1722">
+        <state relative-caret-position="27">
           <caret line="502" column="26" selection-start-line="502" selection-start-column="26" selection-end-line="502" selection-end-column="26" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/server.go">
+    <entry file="file://$PROJECT_DIR$/peer.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="176">
-          <caret line="63" column="5" lean-forward="true" selection-start-line="63" selection-start-column="5" selection-end-line="63" selection-end-column="5" />
+        <state relative-caret-position="-1309">
+          <caret line="194" column="5" selection-start-line="194" selection-start-column="5" selection-end-line="194" selection-end-column="5" />
+          <folding>
+            <element signature="e#14#157#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/websocket/deal.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="27">
+          <caret line="14" lean-forward="true" selection-start-line="14" selection-end-line="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/websocket/server_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="135">
+          <caret line="5" column="6" lean-forward="true" selection-start-line="5" selection-start-column="6" selection-end-line="5" selection-end-column="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/websocket/peer.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="312">
+          <caret line="236" column="43" selection-start-line="236" selection-start-column="43" selection-end-line="236" selection-end-column="43" />
         </state>
       </provider>
     </entry>

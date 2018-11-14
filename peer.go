@@ -35,12 +35,16 @@ func web(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var wg sync.WaitGroup
 func serverReceive(server *PeerConn) {
-	defer wg.Done()
+	defer server.wg.Done()
 
 	var err error
 	server.PeerCount++
+	// Todo
+	// Channel number over the max number
+	if server.PeerCount > server.MaxPeers {
+
+	}
 	fmt.Println("begin to listen")
 	// Judge whether is server and do reference deal
 	isServer := JudgeIsServer(server)
@@ -155,10 +159,10 @@ func serverReply(peer *PeerConn) {
 func Listen(ws *websocket.Conn) {
 	//go EchoHandle(ws)
 	server := NewServerConfig(ws)
-	wg.Add(1)
+	server.wg.Add(1)
 	go serverReceive(server)
 	serverReply(server)
-	res := WaitTimeout(&wg, 1 * time.Second)
+	res := WaitTimeout(&server.wg, 1 * time.Second)
 	if res {
 		fmt.Println("执行完成退出")
 	} else {
@@ -273,7 +277,7 @@ func startClientMode() {
 
 	origin := "http://127.0.0.1:8989/"
 	// "ws://192.168.200.40:8989/"
-	ws_url := "ws://10.8.161.112:8989/"
+	ws_url := "ws://192.168.200.40:8989/"
 	ws, err := websocket.Dial(ws_url,"",origin)
 	if err != nil {
 		log.Fatal(err)
